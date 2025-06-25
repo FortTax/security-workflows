@@ -130,7 +130,7 @@ on:
 1. **For Pull Requests**: Run security scans for code review
 2. **For Deployments**: Run security scans AFTER successful deployment
 3. **For Scheduled**: Run weekly comprehensive scans
-4. **For Dormant Repos**: Run monthly scans if no recent activity
+4. **For Dormant Repos**: Run weekly checks, scan if no activity >30 days
 
 ```yaml
 name: Security Scan
@@ -150,8 +150,8 @@ on:
   schedule:
     # Weekly comprehensive scan (Mondays at 10 AM UTC)
     - cron: "0 10 * * 1"
-    # Monthly dormant repository scan (1st of month at 9 AM UTC)
-    - cron: "0 9 1 * *"
+    # Weekly dormant repository check (Tuesdays at 9 AM UTC)
+    - cron: "0 9 * * 2"
 
   # Manual trigger
   workflow_dispatch:
@@ -173,9 +173,9 @@ jobs:
       - name: Check if scan is needed
         id: check
         run: |
-          # For monthly schedule (1st of month), check if repo has been dormant
-          if [[ "${{ github.event.schedule }}" == "0 9 1 * *" ]]; then
-            echo "🗓️ Monthly dormant repository check..."
+          # For dormant check schedule (Tuesdays), check if repo has been dormant
+          if [[ "${{ github.event.schedule }}" == "0 9 * * 2" ]]; then
+            echo "🗓️ Weekly dormant repository check..."
 
             # Check last commit date
             LAST_COMMIT_DATE=$(git log -1 --format=%ct)
