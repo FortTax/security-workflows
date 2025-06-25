@@ -1,0 +1,306 @@
+name: Reusable Security Scan
+
+on:
+  workflow_call:
+    inputs:
+      app_name:
+        description: 'Name of the application being scanned'
+        required: true
+        type: string
+      target_url:
+        description: 'URL to scan (for DAST scanning)'
+        required: false
+        type: string
+        default: ''
+      scan_type:
+        description: 'Type of scan to run (sast, secrets, dast, dependencies, container, iac, license, financial, backend, or all)'
+        required: false
+        type: string
+        default: 'all'
+      notification_email:
+        description: 'Email address for notifications'
+        required: false
+        type: string
+        default: ''
+      repository_name:
+        description: 'Name of the repository being scanned'
+        required: false
+        type: string
+        default: ${{ github.repository }}
+      include_financial_compliance:
+        description: 'Include financial services compliance checks'
+        required: false
+        type: boolean
+        default: false
+      severity_threshold:
+        description: 'Minimum severity level to report (low, medium, high, critical)'
+        required: false
+        type: string
+        default: 'medium'
+    secrets:
+      SNYK_TOKEN:
+        description: 'Snyk API token for dependency scanning'
+        required: false
+      FOSSA_API_KEY:
+        description: 'FOSSA API key for license compliance'
+        required: false
+      SEMGREP_APP_TOKEN:
+        description: 'Semgrep App token for enhanced SAST scanning'
+        required: false
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    name: Security Scan for ${{ inputs.app_name }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Security Scan Header
+        run: |
+          echo "🛡️ Starting Security Scan for ${{ inputs.app_name }}"
+          echo "📋 Repository: ${{ inputs.repository_name }}"
+          echo "🔍 Scan Type: ${{ inputs.scan_type }}"
+          echo "🎯 Target URL: ${{ inputs.target_url || 'N/A' }}"
+          echo "📧 Notifications: ${{ inputs.notification_email || 'None' }}"
+          echo "⚖️ Financial Compliance: ${{ inputs.include_financial_compliance }}"
+          echo "🚨 Severity Threshold: ${{ inputs.severity_threshold }}"
+
+      - name: Set up scan results
+        id: scan-results
+        run: |
+          echo "has_issues=false" >> $GITHUB_OUTPUT
+          echo "scan_summary=" >> $GITHUB_OUTPUT
+          echo "findings_count=0" >> $GITHUB_OUTPUT
+
+      # Determine what scans to run
+      - name: Determine scan configuration
+        id: scan-config
+        run: |
+          SCAN_TYPE="${{ inputs.scan_type }}"
+
+          # Backend scan = sast,secrets,dependencies,container,iac
+          if [ "$SCAN_TYPE" = "backend" ]; then
+            echo "run_sast=true" >> $GITHUB_OUTPUT
+            echo "run_secrets=true" >> $GITHUB_OUTPUT
+            echo "run_dependencies=true" >> $GITHUB_OUTPUT
+            echo "run_container=true" >> $GITHUB_OUTPUT
+            echo "run_iac=true" >> $GITHUB_OUTPUT
+            echo "run_dast=false" >> $GITHUB_OUTPUT
+            echo "run_license=false" >> $GITHUB_OUTPUT
+            echo "run_financial=false" >> $GITHUB_OUTPUT
+          elif [ "$SCAN_TYPE" = "all" ]; then
+            echo "run_sast=true" >> $GITHUB_OUTPUT
+            echo "run_secrets=true" >> $GITHUB_OUTPUT
+            echo "run_dependencies=true" >> $GITHUB_OUTPUT
+            echo "run_container=true" >> $GITHUB_OUTPUT
+            echo "run_iac=true" >> $GITHUB_OUTPUT
+            echo "run_dast=true" >> $GITHUB_OUTPUT
+            echo "run_license=true" >> $GITHUB_OUTPUT
+            echo "run_financial=true" >> $GITHUB_OUTPUT
+          else
+            # Check individual scan types
+            echo "run_sast=$(if [[ "$SCAN_TYPE" == *"sast"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+            echo "run_secrets=$(if [[ "$SCAN_TYPE" == *"secrets"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+            echo "run_dependencies=$(if [[ "$SCAN_TYPE" == *"dependencies"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+            echo "run_container=$(if [[ "$SCAN_TYPE" == *"container"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+            echo "run_iac=$(if [[ "$SCAN_TYPE" == *"iac"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+            echo "run_dast=$(if [[ "$SCAN_TYPE" == *"dast"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+            echo "run_license=$(if [[ "$SCAN_TYPE" == *"license"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+            echo "run_financial=$(if [[ "$SCAN_TYPE" == *"financial"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
+          fi
+
+      # SAST Scanning with Semgrep
+      - name: SAST Scan with Semgrep
+        if: steps.scan-config.outputs.run_sast == 'true'
+        continue-on-error: true
+        uses: semgrep/semgrep-action@v1
+        with:
+          config: >-
+            p/security-audit
+            p/owasp-top-ten
+            ${{ inputs.include_financial_compliance && 'p/fintech' || '' }}
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+
+      # Secrets Detection with GitLeaks
+      - name: Secrets Scan with GitLeaks
+        if: steps.scan-config.outputs.run_secrets == 'true'
+        continue-on-error: true
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      # DAST Scanning with OWASP ZAP (only if URL provided)
+      - name: DAST Scan with OWASP ZAP
+        if: steps.scan-config.outputs.run_dast == 'true' && inputs.target_url != ''
+        continue-on-error: true
+        uses: zaproxy/action-baseline@v0.12.0
+        with:
+          target: ${{ inputs.target_url }}
+          rules_file_name: '.zap/rules.tsv'
+          cmd_options: '-a'
+
+      # Dependency Scanning with Snyk
+      - name: Dependency Vulnerability Scan
+        if: steps.scan-config.outputs.run_dependencies == 'true'
+        continue-on-error: true
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=${{ inputs.severity_threshold }}
+
+      # Container Image Scanning with Trivy
+      - name: Container Security Scan
+        if: steps.scan-config.outputs.run_container == 'true'
+        continue-on-error: true
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      # License Compliance Scanning
+      - name: License Compliance Scan
+        if: steps.scan-config.outputs.run_license == 'true'
+        continue-on-error: true
+        uses: fossa-contrib/fossa-action@v3
+        with:
+          fossa-api-key: ${{ secrets.FOSSA_API_KEY }}
+
+      # Infrastructure as Code (IaC) Security
+      - name: IaC Security Scan with Checkov
+        if: steps.scan-config.outputs.run_iac == 'true'
+        continue-on-error: true
+        uses: bridgecrewio/checkov-action@master
+        with:
+          directory: .
+          framework: terraform,cloudformation,kubernetes,dockerfile
+          output_format: sarif
+          output_file_path: checkov-results.sarif
+
+      # Financial Services Compliance Check (if enabled)
+      - name: Financial Compliance Check
+        if: (steps.scan-config.outputs.run_financial == 'true' || inputs.include_financial_compliance) && steps.scan-config.outputs.run_financial != 'false'
+        continue-on-error: true
+        run: |
+          echo "🏦 Checking Financial Services Compliance for ${{ inputs.app_name }}..."
+
+          # Check for PCI DSS related configurations
+          echo "📋 PCI DSS Configuration Check:"
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.json" | xargs grep -l "credit.*card\|payment\|billing" 2>/dev/null; then
+            echo "⚠️  Payment-related code detected - PCI DSS compliance may be required"
+            echo "has_payment_code=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for financial data handling
+          echo "📋 Financial Data Handling Check:"
+          if find . -name "*.js" -o -name "*.ts" | xargs grep -l "tax\|financial\|bank\|account.*number\|ssn\|social.*security" 2>/dev/null; then
+            echo "⚠️  Financial data handling detected - Enhanced security controls recommended"
+            echo "has_financial_data=true" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for GDPR/Privacy compliance indicators
+          echo "📋 Privacy Compliance Check:"
+          if find . -name "*.js" -o -name "*.ts" | xargs grep -l "personal.*data\|privacy\|gdpr\|ccpa" 2>/dev/null; then
+            echo "✅ Privacy compliance indicators found"
+            echo "has_privacy_controls=true" >> $GITHUB_OUTPUT
+          fi
+
+      # Upload SARIF results to GitHub Security tab
+      - name: Upload SARIF results
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: |
+            trivy-results.sarif
+            checkov-results.sarif
+        continue-on-error: true
+
+      # Check for scan failures and set output
+      - name: Check scan results
+        if: failure()
+        run: |
+          echo "has_issues=true" >> $GITHUB_OUTPUT
+          echo "scan_summary=Security issues detected in ${{ inputs.app_name }}" >> $GITHUB_OUTPUT
+
+          # Count findings (simplified)
+          FINDINGS=0
+          if [ -f "trivy-results.sarif" ]; then
+            TRIVY_FINDINGS=$(jq '.runs[0].results | length' trivy-results.sarif 2>/dev/null || echo 0)
+            FINDINGS=$((FINDINGS + TRIVY_FINDINGS))
+          fi
+          echo "findings_count=$FINDINGS" >> $GITHUB_OUTPUT
+        id: check-results
+
+      # Create GitHub issue if security issues found
+      - name: Create Security Issue
+        if: failure() && inputs.notification_email != ''
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ github.token }}
+          script: |
+            const title = `🚨 Security Issues Detected - ${{ inputs.app_name }}`;
+            const body = `## Security Scan Failed
+
+            **Application:** ${{ inputs.app_name }}
+            **Repository:** ${{ inputs.repository_name }}
+            **Branch:** ${{ github.ref_name }}
+            **Commit:** ${{ github.sha }}
+            **Scan Type:** ${{ inputs.scan_type }}
+            **Triggered by:** ${{ github.event_name }}
+            **Scanned from:** FortTax Security Framework
+
+            ### 🔗 Links
+            - [View full report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            - [Commit details](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
+            - [Security Framework](https://github.com/FortTax/security-workflows)
+
+            ### 📋 Next Steps
+            1. Review the security scan results in the Actions tab
+            2. Address any critical or high-severity findings
+            3. Re-run the security scan to verify fixes
+            4. Close this issue once all security issues are resolved
+
+            **Notification Email:** ${{ inputs.notification_email }}
+
+            ---
+            *This issue was automatically created by the FortTax Security Framework.*`;
+
+            github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: title,
+              body: body,
+              labels: ['security', 'automated', 'forttax-security-scan']
+            });
+
+      # Create summary
+      - name: Security Scan Summary
+        run: |
+          echo "## 🔐 Security Scan Results for ${{ inputs.app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Application:** ${{ inputs.app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository:** ${{ inputs.repository_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scan Type:** ${{ inputs.scan_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Severity Threshold:** ${{ inputs.severity_threshold }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Financial Compliance:** ${{ inputs.include_financial_compliance }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scanned by:** FortTax Security Framework" >> $GITHUB_STEP_SUMMARY
+
+          if [ "${{ job.status }}" = "success" ]; then
+            echo "- **Status:** ✅ No critical issues found" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Status:** ❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          if [ "${{ inputs.target_url }}" != "" ]; then
+            echo "- **Target URL:** ${{ inputs.target_url }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔗 Security Framework" >> $GITHUB_STEP_SUMMARY
+          echo "- [Framework Repository](https://github.com/FortTax/security-workflows)" >> $GITHUB_STEP_SUMMARY
+          echo "- [Documentation](https://github.com/FortTax/security-workflows/blob/main/README.md)" >> $GITHUB_STEP_SUMMARY

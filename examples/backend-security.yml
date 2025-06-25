@@ -1,0 +1,56 @@
+# Example: Backend Security Scan
+# Copy this file to: .github/workflows/security-scan.yml
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Weekly scan on Mondays at 10 AM UTC
+    - cron: "0 10 * * 1"
+  workflow_dispatch:
+    inputs:
+      scan_type:
+        description: "Type of security scan to run"
+        required: false
+        default: "backend"
+        type: choice
+        options:
+          - backend
+          - all
+          - sast
+          - secrets
+          - dependencies
+          - container
+          - iac
+
+jobs:
+  security-scan:
+    name: Backend Security Scan
+    uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
+    with:
+      # REQUIRED: Replace with your application name
+      app_name: "Your Backend Service"
+
+      # Backend-optimized scan types (no DAST since no frontend)
+      scan_type: ${{ inputs.scan_type || 'backend' }}
+
+      # No target URL - this is a backend service
+      # target_url: ""
+
+      # Financial compliance for tax-related backend
+      include_financial_compliance: true
+
+      # High severity threshold for backend services
+      severity_threshold: "high"
+
+      # Security notifications
+      notification_email: "security@yourcompany.com"
+
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
+      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}

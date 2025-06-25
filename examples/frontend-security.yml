@@ -1,0 +1,80 @@
+# Example: Frontend/Web Application Security Scan
+# Copy this file to: .github/workflows/security-scan.yml
+
+name: Security Scan
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: "URL to scan (for DAST)"
+        required: false
+        type: string
+      scan_type:
+        description: "Type of security scan to run"
+        required: false
+        default: "all"
+        type: choice
+        options:
+          - all
+          - sast
+          - secrets
+          - dast
+          - dependencies
+          - container
+
+jobs:
+  check-deployment:
+    if: github.event.deployment_status.state == 'success' || github.event_name != 'deployment_status'
+    runs-on: ubuntu-latest
+    outputs:
+      should_scan: ${{ steps.check.outputs.should_scan }}
+      app_url: ${{ steps.check.outputs.app_url }}
+    steps:
+      - name: Determine scan parameters
+        id: check
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "should_scan=true" >> $GITHUB_OUTPUT
+            echo "app_url=${{ inputs.target_url || 'https://your-app.com' }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "deployment_status" ]; then
+            echo "should_scan=true" >> $GITHUB_OUTPUT
+            echo "app_url=${{ github.event.deployment_status.target_url }}" >> $GITHUB_OUTPUT
+          else
+            echo "should_scan=true" >> $GITHUB_OUTPUT
+            echo "app_url=https://your-staging-app.com" >> $GITHUB_OUTPUT
+          fi
+
+  security-scan:
+    name: Frontend Security Scan
+    needs: check-deployment
+    if: needs.check-deployment.outputs.should_scan == 'true'
+    uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
+    with:
+      # REQUIRED: Replace with your application name
+      app_name: "Your Web Application"
+
+      # Include target URL for DAST scanning
+      target_url: ${{ needs.check-deployment.outputs.app_url }}
+
+      # Full scan including DAST for web applications
+      scan_type: ${{ inputs.scan_type || 'all' }}
+
+      # Financial compliance if needed
+      include_financial_compliance: false
+
+      # Medium severity threshold for frontend
+      severity_threshold: "medium"
+
+      # Security notifications
+      notification_email: "security@yourcompany.com"
+
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
+      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
