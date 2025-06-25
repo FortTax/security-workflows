@@ -90,6 +90,83 @@ When `include_financial_compliance: true`, additional checks are performed for:
 - **SOC 2** - Service organization controls
 - **GDPR** - Data protection compliance
 
+## ⚠️ Important: Avoiding Duplicate Security Scans
+
+**CRITICAL:** Ensure you only have **ONE** security workflow per repository to
+avoid duplicate scans and resource waste.
+
+### Common Issues to Avoid
+
+❌ **Don't do this** - Multiple security workflows:
+
+```yaml
+# BAD: Multiple files triggering on same events
+# security-scan.yml
+on:
+  push:
+    branches: [main]
+
+# security-scan-internal.yml
+on:
+  push:
+    branches: [main]
+```
+
+✅ **Do this instead** - Single workflow with proper timing:
+
+```yaml
+# GOOD: One workflow after deployment
+on:
+  pull_request:
+    branches: [main]
+  workflow_run:
+    workflows: ["Test and Deploy"]
+    types: [completed]
+    branches: [main]
+```
+
+### Recommended Workflow Timing
+
+1. **For Pull Requests**: Run security scans for code review
+2. **For Deployments**: Run security scans AFTER successful deployment
+3. **For Scheduled**: Run weekly comprehensive scans
+
+```yaml
+name: Security Scan
+
+on:
+  # Code review security check
+  pull_request:
+    branches: [main]
+
+  # Post-deployment security scan
+  workflow_run:
+    workflows: ["Test and Deploy"]
+    types: [completed]
+    branches: [main]
+
+  # Weekly comprehensive scan
+  schedule:
+    - cron: "0 10 * * 1"
+
+  # Manual trigger
+  workflow_dispatch:
+
+jobs:
+  security-scan:
+    # Only run if deployment succeeded
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      github.event_name == 'pull_request' ||
+      github.event_name == 'schedule' ||
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+
+    uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
+    with:
+      app_name: "Your App"
+      scan_type: "all"
+```
+
 ## 📋 Usage Examples
 
 ### Web Application
