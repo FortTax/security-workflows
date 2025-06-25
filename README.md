@@ -130,6 +130,7 @@ on:
 1. **For Pull Requests**: Run security scans for code review
 2. **For Deployments**: Run security scans AFTER successful deployment
 3. **For Scheduled**: Run weekly comprehensive scans
+4. **For Dormant Repos**: Run monthly scans if no recent activity
 
 ```yaml
 name: Security Scan
@@ -145,21 +146,68 @@ on:
     types: [completed]
     branches: [main]
 
-  # Weekly comprehensive scan
+  # Scheduled scans
   schedule:
+    # Weekly comprehensive scan (Mondays at 10 AM UTC)
     - cron: "0 10 * * 1"
+    # Monthly dormant repository scan (1st of month at 9 AM UTC)
+    - cron: "0 9 1 * *"
 
   # Manual trigger
   workflow_dispatch:
 
 jobs:
+  # Check if repository needs scanning (for scheduled events)
+  check-scan-needed:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    outputs:
+      should_scan: ${{ steps.check.outputs.should_scan }}
+      scan_reason: ${{ steps.check.outputs.scan_reason }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check if scan is needed
+        id: check
+        run: |
+          # For monthly schedule (1st of month), check if repo has been dormant
+          if [[ "${{ github.event.schedule }}" == "0 9 1 * *" ]]; then
+            echo "🗓️ Monthly dormant repository check..."
+
+            # Check last commit date
+            LAST_COMMIT_DATE=$(git log -1 --format=%ct)
+            CURRENT_DATE=$(date +%s)
+            DAYS_SINCE_LAST_COMMIT=$(( (CURRENT_DATE - LAST_COMMIT_DATE) / 86400 ))
+
+            echo "Last commit was $DAYS_SINCE_LAST_COMMIT days ago"
+
+            if [ $DAYS_SINCE_LAST_COMMIT -gt 30 ]; then
+              echo "should_scan=true" >> $GITHUB_OUTPUT
+              echo "scan_reason=Dormant repository (${DAYS_SINCE_LAST_COMMIT} days since last commit)" >> $GITHUB_OUTPUT
+              echo "✅ Repository dormant for $DAYS_SINCE_LAST_COMMIT days - security scan needed"
+            else
+              echo "should_scan=false" >> $GITHUB_OUTPUT
+              echo "scan_reason=Recent activity (${DAYS_SINCE_LAST_COMMIT} days since last commit)" >> $GITHUB_OUTPUT
+              echo "⏭️ Repository active (last commit $DAYS_SINCE_LAST_COMMIT days ago) - skipping scan"
+            fi
+          else
+            # Weekly scan always runs
+            echo "should_scan=true" >> $GITHUB_OUTPUT
+            echo "scan_reason=Weekly comprehensive scan" >> $GITHUB_OUTPUT
+            echo "✅ Weekly comprehensive scan scheduled"
+          fi
+
   security-scan:
-    # Only run if deployment succeeded
+    needs: [check-scan-needed]
+    # Only run if deployment succeeded, manual trigger, PR, or scheduled scan is needed
     if: |
       github.event_name == 'workflow_dispatch' ||
       github.event_name == 'pull_request' ||
-      github.event_name == 'schedule' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
+      (github.event_name == 'schedule' && needs.check-scan-needed.outputs.should_scan == 'true')
 
     uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
     with:
