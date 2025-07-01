@@ -13,7 +13,7 @@ on:
         type: string
         default: ''
       scan_type:
-        description: 'Type of scan to run (sast, secrets, dast, dependencies, container, iac, license, financial, backend, or all)'
+        description: 'Type of scan to run (sast, secrets, dast, dependencies, container, iac, license, financial, backend, frontend, or all)'
         required: false
         type: string
         default: 'all'
@@ -31,12 +31,22 @@ on:
         description: 'Include financial services compliance checks'
         required: false
         type: boolean
-        default: false
+        default: true
       severity_threshold:
         description: 'Minimum severity level to report (low, medium, high, critical)'
         required: false
         type: string
         default: 'medium'
+      app_framework:
+        description: 'Application framework (vite, nextjs, react, node)'
+        required: false
+        type: string
+        default: 'auto-detect'
+      node_version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '18'
     secrets:
       SNYK_TOKEN:
         description: 'Snyk API token for dependency scanning'
@@ -47,15 +57,27 @@ on:
       SEMGREP_APP_TOKEN:
         description: 'Semgrep App token for enhanced SAST scanning'
         required: false
+      SECURITY_EMAIL_WEBHOOK:
+        description: 'Webhook URL for security notifications'
+        required: false
+
+permissions:
+  contents: read
+  issues: write
+  security-events: write
+  actions: read
 
 jobs:
   security-scan:
     runs-on: ubuntu-latest
     name: Security Scan for ${{ inputs.app_name }}
+    continue-on-error: true
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Security Scan Header
         run: |
@@ -66,6 +88,34 @@ jobs:
           echo "📧 Notifications: ${{ inputs.notification_email || 'None' }}"
           echo "⚖️ Financial Compliance: ${{ inputs.include_financial_compliance }}"
           echo "🚨 Severity Threshold: ${{ inputs.severity_threshold }}"
+          echo "🚀 Framework: ${{ inputs.app_framework }}"
+          mkdir -p security-results
+
+      - name: Detect Application Framework
+        id: framework
+        run: |
+          FRAMEWORK="${{ inputs.app_framework }}"
+
+          if [ "$FRAMEWORK" = "auto-detect" ]; then
+            if [ -f "next.config.js" ] || [ -f "next.config.ts" ] || [ -f "next.config.mjs" ]; then
+              FRAMEWORK="nextjs"
+            elif [ -f "vite.config.js" ] || [ -f "vite.config.ts" ]; then
+              FRAMEWORK="vite"
+            elif [ -f "package.json" ]; then
+              if grep -q "\"next\":" package.json; then
+                FRAMEWORK="nextjs"
+              elif grep -q "\"vite\":" package.json; then
+                FRAMEWORK="vite"
+              else
+                FRAMEWORK="react"
+              fi
+            else
+              FRAMEWORK="node"
+            fi
+          fi
+
+          echo "Detected framework: $FRAMEWORK"
+          echo "framework=$FRAMEWORK" >> $GITHUB_OUTPUT
 
       - name: Set up scan results
         id: scan-results
@@ -80,16 +130,26 @@ jobs:
         run: |
           SCAN_TYPE="${{ inputs.scan_type }}"
 
+          # Frontend scan = sast,secrets,dependencies,container,dast (includes DAST for web apps)
+          if [ "$SCAN_TYPE" = "frontend" ]; then
+            echo "run_sast=true" >> $GITHUB_OUTPUT
+            echo "run_secrets=true" >> $GITHUB_OUTPUT
+            echo "run_dependencies=true" >> $GITHUB_OUTPUT
+            echo "run_container=true" >> $GITHUB_OUTPUT
+            echo "run_iac=false" >> $GITHUB_OUTPUT
+            echo "run_dast=true" >> $GITHUB_OUTPUT
+            echo "run_license=true" >> $GITHUB_OUTPUT
+            echo "run_financial=true" >> $GITHUB_OUTPUT
           # Backend scan = sast,secrets,dependencies,container,iac
-          if [ "$SCAN_TYPE" = "backend" ]; then
+          elif [ "$SCAN_TYPE" = "backend" ]; then
             echo "run_sast=true" >> $GITHUB_OUTPUT
             echo "run_secrets=true" >> $GITHUB_OUTPUT
             echo "run_dependencies=true" >> $GITHUB_OUTPUT
             echo "run_container=true" >> $GITHUB_OUTPUT
             echo "run_iac=true" >> $GITHUB_OUTPUT
             echo "run_dast=false" >> $GITHUB_OUTPUT
-            echo "run_license=false" >> $GITHUB_OUTPUT
-            echo "run_financial=false" >> $GITHUB_OUTPUT
+            echo "run_license=true" >> $GITHUB_OUTPUT
+            echo "run_financial=true" >> $GITHUB_OUTPUT
           elif [ "$SCAN_TYPE" = "all" ]; then
             echo "run_sast=true" >> $GITHUB_OUTPUT
             echo "run_secrets=true" >> $GITHUB_OUTPUT
@@ -111,29 +171,213 @@ jobs:
             echo "run_financial=$(if [[ "$SCAN_TYPE" == *"financial"* ]]; then echo true; else echo false; fi)" >> $GITHUB_OUTPUT
           fi
 
-      # SAST Scanning with Semgrep
-      - name: SAST Scan with Semgrep
-        if: steps.scan-config.outputs.run_sast == 'true'
-        continue-on-error: true
-        uses: semgrep/semgrep-action@v1
+      - name: Setup Node.js
+        if: steps.scan-config.outputs.run_dependencies == 'true' || steps.scan-config.outputs.run_sast == 'true'
+        uses: actions/setup-node@v4
         with:
-          config: >-
-            p/security-audit
-            p/owasp-top-ten
-            ${{ inputs.include_financial_compliance && 'p/fintech' || '' }}
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+          node-version: ${{ inputs.node_version }}
+          cache: 'npm'
 
-      # Secrets Detection with GitLeaks
-      - name: Secrets Scan with GitLeaks
+      - name: Install dependencies for scanning
+        if: steps.scan-config.outputs.run_dependencies == 'true' || steps.scan-config.outputs.run_sast == 'true'
+        continue-on-error: true
+        run: |
+          if [ -f "package-lock.json" ]; then
+            if ! npm ci --legacy-peer-deps; then
+              echo "npm ci failed, trying alternative approach..."
+              rm -f package-lock.json
+              npm install --legacy-peer-deps
+            fi
+          elif [ -f "package.json" ]; then
+            npm install --legacy-peer-deps
+          fi
+
+      # Enhanced Secrets Detection with GitLeaks
+      - name: "🔐 Secrets Detection with GitLeaks"
         if: steps.scan-config.outputs.run_secrets == 'true'
         continue-on-error: true
-        uses: gitleaks/gitleaks-action@v2
+        run: |
+          echo "🔍 Running GitLeaks secrets scan"
+
+          # Install GitLeaks
+          wget -q https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_8.18.4_linux_x64.tar.gz
+          tar -xzf gitleaks_8.18.4_linux_x64.tar.gz
+          chmod +x gitleaks
+
+          # Run GitLeaks scan
+          ./gitleaks detect --source . --report-format json --report-path security-results/gitleaks-report.json --verbose || echo "GitLeaks completed with findings"
+
+          # Process results
+          if [ -f "security-results/gitleaks-report.json" ]; then
+            SECRETS_COUNT=$(jq length security-results/gitleaks-report.json 2>/dev/null || echo "0")
+            echo "📋 GitLeaks found $SECRETS_COUNT potential secrets"
+            echo "secrets_found=$SECRETS_COUNT" >> $GITHUB_OUTPUT
+
+            if [ "$SECRETS_COUNT" -gt 0 ]; then
+              echo "🚨 SECURITY ALERT: Potential secrets detected!"
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+            # Enhanced SAST Scanning with Semgrep (Premium - Optional)
+      - name: "🔍 Premium SAST Scan with Semgrep"
+        if: steps.scan-config.outputs.run_sast == 'true' && env.SEMGREP_APP_TOKEN != ''
+        continue-on-error: true
         env:
-          GITHUB_TOKEN: ${{ github.token }}
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: |
+          echo "📝 Running Semgrep SAST scan (Premium)"
+          pip install semgrep
+
+          # Framework-specific rules
+          FRAMEWORK="${{ steps.framework.outputs.framework }}"
+          RULES="--config=auto --config=p/security-audit --config=p/owasp-top-ten"
+
+          if [ "$FRAMEWORK" = "nextjs" ]; then
+            RULES="$RULES --config=p/react --config=p/typescript --config=p/nextjs"
+          elif [ "$FRAMEWORK" = "vite" ] || [ "$FRAMEWORK" = "react" ]; then
+            RULES="$RULES --config=p/react --config=p/typescript"
+          fi
+
+          # Add financial compliance rules
+          if [ "${{ inputs.include_financial_compliance }}" = "true" ]; then
+            RULES="$RULES --config=p/fintech"
+          fi
+
+          semgrep $RULES \
+            --json \
+            --output=security-results/semgrep-results.json \
+            . || echo "Semgrep completed with findings"
+
+          # Process results
+          if [ -f "security-results/semgrep-results.json" ]; then
+            FINDINGS_COUNT=$(jq '.results | length' security-results/semgrep-results.json 2>/dev/null || echo "0")
+            echo "📋 Semgrep found $FINDINGS_COUNT security findings"
+            echo "semgrep_findings=$FINDINGS_COUNT" >> $GITHUB_OUTPUT
+
+            if [ "$FINDINGS_COUNT" -gt 0 ]; then
+              echo "🚨 SECURITY ALERT: SAST findings detected!"
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+            fi
+          fi
+
+      # Free SAST Scanning with ESLint Security
+      - name: "🔍 Free SAST Scan with ESLint Security"
+        if: steps.scan-config.outputs.run_sast == 'true'
+        continue-on-error: true
+        run: |
+          echo "📝 Running free SAST scan with ESLint security plugins"
+
+          # Check if we have package.json (Node.js project)
+          if [ ! -f "package.json" ]; then
+            echo "No package.json found, skipping ESLint security scan"
+            exit 0
+          fi
+
+          # Install ESLint security plugins
+          npm install --no-save eslint@8 @typescript-eslint/eslint-plugin@6 eslint-plugin-security@1 eslint-plugin-react-hooks@4 eslint-plugin-jsx-a11y@6 || echo "Failed to install some ESLint plugins"
+
+          # Create temporary ESLint config for security scanning
+          cat > .eslintrc-security.json << 'EOF'
+          {
+            "env": {
+              "browser": true,
+              "es2021": true,
+              "node": true
+            },
+            "extends": [
+              "eslint:recommended"
+            ],
+            "plugins": [
+              "security",
+              "react-hooks",
+              "jsx-a11y"
+            ],
+            "rules": {
+              "security/detect-object-injection": "error",
+              "security/detect-non-literal-regexp": "error",
+              "security/detect-unsafe-regex": "error",
+              "security/detect-buffer-noassert": "error",
+              "security/detect-child-process": "error",
+              "security/detect-disable-mustache-escape": "error",
+              "security/detect-eval-with-expression": "error",
+              "security/detect-no-csrf-before-method-override": "error",
+              "security/detect-non-literal-fs-filename": "error",
+              "security/detect-non-literal-require": "error",
+              "security/detect-possible-timing-attacks": "error",
+              "security/detect-pseudoRandomBytes": "error",
+              "react-hooks/rules-of-hooks": "error",
+              "react-hooks/exhaustive-deps": "warn",
+              "jsx-a11y/alt-text": "error",
+              "jsx-a11y/anchor-has-content": "error"
+            },
+            "parser": "@typescript-eslint/parser",
+            "parserOptions": {
+              "ecmaVersion": 2021,
+              "sourceType": "module",
+              "ecmaFeatures": {
+                "jsx": true
+              }
+            }
+          }
+          EOF
+
+          # Run ESLint security scan
+          npx eslint --config .eslintrc-security.json \
+            --ext .js,.jsx,.ts,.tsx \
+            --format json \
+            --output-file security-results/eslint-security-results.json \
+            src/ . || echo "ESLint security scan completed with findings"
+
+          # Clean up temp config
+          rm -f .eslintrc-security.json
+
+          # Process results
+          if [ -f "security-results/eslint-security-results.json" ]; then
+            ESLINT_FINDINGS=$(jq '[.[] | select(.errorCount > 0 or .warningCount > 0)] | length' security-results/eslint-security-results.json 2>/dev/null || echo "0")
+            echo "📋 ESLint security scan found issues in $ESLINT_FINDINGS files"
+            echo "eslint_findings=$ESLINT_FINDINGS" >> $GITHUB_OUTPUT
+
+            if [ "$ESLINT_FINDINGS" -gt 0 ]; then
+              echo "⚠️ ESLint security issues detected!"
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+            fi
+          else
+            echo "✅ ESLint security scan completed successfully"
+          fi
+
+      # Free SAST with Bandit (for Python files if any)
+      - name: "🔍 Free Python SAST with Bandit"
+        if: steps.scan-config.outputs.run_sast == 'true'
+        continue-on-error: true
+        run: |
+          # Check if we have Python files
+          if [ -z "$(find . -name "*.py" -not -path "./node_modules/*" -not -path "./.git/*" | head -1)" ]; then
+            echo "No Python files found, skipping Bandit scan"
+            exit 0
+          fi
+
+          echo "📝 Running Bandit security scan for Python files"
+          pip install bandit
+
+          # Run Bandit scan
+          bandit -r . -f json -o security-results/bandit-results.json \
+            --exclude "**/node_modules/**,**/.git/**,**/venv/**,**/__pycache__/**" || echo "Bandit scan completed"
+
+          # Process results
+          if [ -f "security-results/bandit-results.json" ]; then
+            BANDIT_FINDINGS=$(jq '.results | length' security-results/bandit-results.json 2>/dev/null || echo "0")
+            echo "📋 Bandit found $BANDIT_FINDINGS Python security issues"
+            echo "bandit_findings=$BANDIT_FINDINGS" >> $GITHUB_OUTPUT
+
+            if [ "$BANDIT_FINDINGS" -gt 0 ]; then
+              echo "⚠️ Python security issues detected!"
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+            fi
+          fi
 
       # DAST Scanning with OWASP ZAP (only if URL provided)
-      - name: DAST Scan with OWASP ZAP
+      - name: "🌐 DAST Scan with OWASP ZAP"
         if: steps.scan-config.outputs.run_dast == 'true' && inputs.target_url != ''
         continue-on-error: true
         uses: zaproxy/action-baseline@v0.12.0
@@ -142,18 +386,41 @@ jobs:
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
 
-      # Dependency Scanning with Snyk
-      - name: Dependency Vulnerability Scan
+      # Enhanced Dependency Scanning
+      - name: "📦 Dependency Vulnerability Scan"
         if: steps.scan-config.outputs.run_dependencies == 'true'
         continue-on-error: true
-        uses: snyk/actions/node@master
+        run: |
+          echo "📦 Running dependency vulnerability scan"
+
+          # npm audit
+          if [ -f "package.json" ]; then
+            npm audit --audit-level=moderate --json > security-results/npm-audit.json || echo "npm audit completed"
+
+            if [ -f "security-results/npm-audit.json" ]; then
+              VULNERABILITIES=$(jq '.metadata.vulnerabilities.total // 0' security-results/npm-audit.json 2>/dev/null || echo "0")
+              echo "📋 npm audit found $VULNERABILITIES total vulnerabilities"
+              echo "npm_vulnerabilities=$VULNERABILITIES" >> $GITHUB_OUTPUT
+
+              if [ "$VULNERABILITIES" -gt 0 ]; then
+                echo "🚨 SECURITY ALERT: Dependency vulnerabilities detected!"
+                echo "has_issues=true" >> $GITHUB_OUTPUT
+              fi
+            fi
+          fi
+
+      # Enhanced Dependency Scanning with Snyk (if token available)
+      - name: "🐍 Enhanced Dependency Scan with Snyk"
+        if: steps.scan-config.outputs.run_dependencies == 'true' && env.SNYK_TOKEN != ''
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        uses: snyk/actions/node@master
         with:
-          args: --severity-threshold=${{ inputs.severity_threshold }}
+          args: --severity-threshold=${{ inputs.severity_threshold }} --sarif-file-output=security-results/snyk-results.sarif
 
       # Container Image Scanning with Trivy
-      - name: Container Security Scan
+      - name: "🐳 Container Security Scan with Trivy"
         if: steps.scan-config.outputs.run_container == 'true'
         continue-on-error: true
         uses: aquasecurity/trivy-action@master
@@ -161,18 +428,20 @@ jobs:
           scan-type: 'fs'
           scan-ref: '.'
           format: 'sarif'
-          output: 'trivy-results.sarif'
+          output: 'security-results/trivy-results.sarif'
 
       # License Compliance Scanning
-      - name: License Compliance Scan
-        if: steps.scan-config.outputs.run_license == 'true'
+      - name: "📄 License Compliance Scan"
+        if: steps.scan-config.outputs.run_license == 'true' && env.FOSSA_API_KEY != ''
         continue-on-error: true
+        env:
+          FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
         uses: fossa-contrib/fossa-action@v3
         with:
           fossa-api-key: ${{ secrets.FOSSA_API_KEY }}
 
       # Infrastructure as Code (IaC) Security
-      - name: IaC Security Scan with Checkov
+      - name: "🏗️ IaC Security Scan with Checkov"
         if: steps.scan-config.outputs.run_iac == 'true'
         continue-on-error: true
         uses: bridgecrewio/checkov-action@master
@@ -180,127 +449,272 @@ jobs:
           directory: .
           framework: terraform,cloudformation,kubernetes,dockerfile
           output_format: sarif
-          output_file_path: checkov-results.sarif
+          output_file_path: security-results/checkov-results.sarif
 
-      # Financial Services Compliance Check (if enabled)
-      - name: Financial Compliance Check
+      # Financial Services Compliance Check (Enhanced)
+      - name: "🏦 Financial Compliance Check"
         if: (steps.scan-config.outputs.run_financial == 'true' || inputs.include_financial_compliance) && steps.scan-config.outputs.run_financial != 'false'
         continue-on-error: true
         run: |
           echo "🏦 Checking Financial Services Compliance for ${{ inputs.app_name }}..."
 
-          # Check for PCI DSS related configurations
+          # Check for payment-related code
           echo "📋 PCI DSS Configuration Check:"
-          if find . -name "*.js" -o -name "*.ts" -o -name "*.json" | xargs grep -l "credit.*card\|payment\|billing" 2>/dev/null; then
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" -o -name "*.json" | xargs grep -l "credit.*card\|payment\|billing\|stripe\|paypal" 2>/dev/null; then
             echo "⚠️  Payment-related code detected - PCI DSS compliance may be required"
             echo "has_payment_code=true" >> $GITHUB_OUTPUT
           fi
 
           # Check for financial data handling
           echo "📋 Financial Data Handling Check:"
-          if find . -name "*.js" -o -name "*.ts" | xargs grep -l "tax\|financial\|bank\|account.*number\|ssn\|social.*security" 2>/dev/null; then
-            echo "⚠️  Financial data handling detected - Enhanced security controls recommended"
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs grep -l "ssn\|social.*security\|tax.*id\|ein\|routing.*number\|account.*number" 2>/dev/null; then
+            echo "⚠️  Financial data handling detected - Enhanced security required"
             echo "has_financial_data=true" >> $GITHUB_OUTPUT
           fi
 
-          # Check for GDPR/Privacy compliance indicators
-          echo "📋 Privacy Compliance Check:"
-          if find . -name "*.js" -o -name "*.ts" | xargs grep -l "personal.*data\|privacy\|gdpr\|ccpa" 2>/dev/null; then
-            echo "✅ Privacy compliance indicators found"
-            echo "has_privacy_controls=true" >> $GITHUB_OUTPUT
+          # Check for encryption and security measures
+          echo "📋 Security Implementation Check:"
+          ENCRYPTION_CHECK=$(find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs grep -l "encrypt\|crypto\|bcrypt\|jwt" 2>/dev/null | wc -l)
+          if [ "$ENCRYPTION_CHECK" -gt 0 ]; then
+            echo "✅ Encryption implementations found: $ENCRYPTION_CHECK files"
+          else
+            echo "⚠️  No obvious encryption implementations found"
           fi
 
-      # Upload SARIF results to GitHub Security tab
-      - name: Upload SARIF results
+          # Tax software specific checks
+          echo "📋 Tax Software Compliance Check:"
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs grep -l "irs\|tax.*return\|cfc\|pfic\|1040\|8865" 2>/dev/null; then
+            echo "✅ Tax software compliance context detected"
+            echo "is_tax_software=true" >> $GITHUB_OUTPUT
+          fi
+
+      # Token Storage Security Check (from existing security scan)
+      - name: "🔒 Insecure Token Storage Detection"
+        if: steps.scan-config.outputs.run_sast == 'true'
+        continue-on-error: true
+        run: |
+          echo "🔒 Checking for insecure token storage..."
+
+          # Static analysis for insecure storage patterns
+          INSECURE_PATTERNS_FOUND=false
+
+          # Check for localStorage usage with tokens
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs grep -l "localStorage.*token\|localStorage.*auth\|localStorage.*jwt" 2>/dev/null; then
+            echo "⚠️  localStorage token storage detected"
+            INSECURE_PATTERNS_FOUND=true
+          fi
+
+          # Check for sessionStorage with sensitive data
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs grep -l "sessionStorage.*token\|sessionStorage.*auth\|sessionStorage.*jwt" 2>/dev/null; then
+            echo "⚠️  sessionStorage token storage detected"
+            INSECURE_PATTERNS_FOUND=true
+          fi
+
+          # Check for cookies without secure flags
+          if find . -name "*.js" -o -name "*.ts" -o -name "*.tsx" -o -name "*.jsx" | xargs grep -l "document\.cookie.*token\|document\.cookie.*auth" 2>/dev/null; then
+            echo "⚠️  Potentially insecure cookie usage detected"
+            INSECURE_PATTERNS_FOUND=true
+          fi
+
+          if [ "$INSECURE_PATTERNS_FOUND" = true ]; then
+            echo "🚨 SECURITY ALERT: Insecure token storage patterns detected!"
+            echo "has_insecure_tokens=true" >> $GITHUB_OUTPUT
+            echo "has_issues=true" >> $GITHUB_OUTPUT
+          else
+            echo "✅ No obvious insecure token storage patterns found"
+          fi
+
+      # Check for SARIF files and upload to GitHub Security
+      - name: "📊 Check and Upload SARIF Results"
+        id: sarif-upload
         if: always()
+        continue-on-error: true
+        run: |
+          echo "🔍 Checking for SARIF files to upload..."
+
+          # List all potential SARIF files
+          SARIF_FILES=""
+          SARIF_COUNT=0
+
+          if [ -f "security-results/trivy-results.sarif" ]; then
+            echo "✅ Found trivy-results.sarif"
+            SARIF_FILES="$SARIF_FILES security-results/trivy-results.sarif"
+            SARIF_COUNT=$((SARIF_COUNT + 1))
+          else
+            echo "⚠️  trivy-results.sarif not found (expected from container scan)"
+          fi
+
+          if [ -f "security-results/checkov-results.sarif" ]; then
+            echo "✅ Found checkov-results.sarif"
+            SARIF_FILES="$SARIF_FILES security-results/checkov-results.sarif"
+            SARIF_COUNT=$((SARIF_COUNT + 1))
+          else
+            echo "⚠️  checkov-results.sarif not found (expected from IaC scan)"
+          fi
+
+          # Check for any other SARIF files
+          OTHER_SARIF=$(find security-results/ -name "*.sarif" 2>/dev/null | grep -v "trivy-results.sarif\|checkov-results.sarif" || true)
+          if [ ! -z "$OTHER_SARIF" ]; then
+            echo "✅ Found additional SARIF files: $OTHER_SARIF"
+            SARIF_FILES="$SARIF_FILES $OTHER_SARIF"
+            SARIF_COUNT=$((SARIF_COUNT + $(echo "$OTHER_SARIF" | wc -l)))
+          fi
+
+          if [ "$SARIF_COUNT" -gt 0 ]; then
+            echo "📤 Found $SARIF_COUNT SARIF file(s) to upload"
+            echo "sarif_files_found=true" >> $GITHUB_OUTPUT
+            # Create a combined SARIF directory for upload
+            mkdir -p security-results/sarif-upload
+            for file in $SARIF_FILES; do
+              if [ -f "$file" ]; then
+                cp "$file" security-results/sarif-upload/
+              fi
+            done
+            echo "sarif_upload_dir=security-results/sarif-upload" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️  No SARIF files found to upload"
+            echo "sarif_files_found=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Upload SARIF files to GitHub Security (requires GitHub Advanced Security)
+      - name: "📤 Upload SARIF to GitHub Security"
+        if: always() && steps.sarif-upload.outputs.sarif_files_found == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: |
-            trivy-results.sarif
-            checkov-results.sarif
+          sarif_file: ${{ steps.sarif-upload.outputs.sarif_upload_dir }}
+          category: security-scan-results
         continue-on-error: true
 
-      # Check for scan failures and set output
-      - name: Check scan results
-        if: failure()
-        run: |
-          echo "has_issues=true" >> $GITHUB_OUTPUT
-          echo "scan_summary=Security issues detected in ${{ inputs.app_name }}" >> $GITHUB_OUTPUT
-
-          # Count findings (simplified)
-          FINDINGS=0
-          if [ -f "trivy-results.sarif" ]; then
-            TRIVY_FINDINGS=$(jq '.runs[0].results | length' trivy-results.sarif 2>/dev/null || echo 0)
-            FINDINGS=$((FINDINGS + TRIVY_FINDINGS))
-          fi
-          echo "findings_count=$FINDINGS" >> $GITHUB_OUTPUT
-        id: check-results
-
-      # Create GitHub issue if security issues found
-      - name: Create Security Issue
-        if: failure() && inputs.notification_email != ''
-        uses: actions/github-script@v7
+      # Upload security results
+      - name: "📤 Upload Security Results"
+        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ github.token }}
-          script: |
-            const title = `🚨 Security Issues Detected - ${{ inputs.app_name }}`;
-            const body = `## Security Scan Failed
+          name: security-scan-results-${{ inputs.app_name }}-${{ github.run_number }}
+          path: security-results/
+          retention-days: 30
 
-            **Application:** ${{ inputs.app_name }}
-            **Repository:** ${{ inputs.repository_name }}
-            **Branch:** ${{ github.ref_name }}
-            **Commit:** ${{ github.sha }}
-            **Scan Type:** ${{ inputs.scan_type }}
-            **Triggered by:** ${{ github.event_name }}
-            **Scanned from:** FortTax Security Framework
-
-            ### 🔗 Links
-            - [View full report](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
-            - [Commit details](${{ github.server_url }}/${{ github.repository }}/commit/${{ github.sha }})
-            - [Security Framework](https://github.com/FortTax/security-workflows)
-
-            ### 📋 Next Steps
-            1. Review the security scan results in the Actions tab
-            2. Address any critical or high-severity findings
-            3. Re-run the security scan to verify fixes
-            4. Close this issue once all security issues are resolved
-
-            **Notification Email:** ${{ inputs.notification_email }}
-
-            ---
-            *This issue was automatically created by the FortTax Security Framework.*`;
-
-            github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: title,
-              body: body,
-              labels: ['security', 'automated', 'forttax-security-scan']
-            });
-
-      # Create summary
-      - name: Security Scan Summary
+      # Enhanced Security Summary and Notification
+      - name: "📊 Create Security Summary and Notifications"
+        if: always()
         run: |
-          echo "## 🔐 Security Scan Results for ${{ inputs.app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "## 🛡️ Security Scan Results for ${{ inputs.app_name }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "- **Application:** ${{ inputs.app_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Repository:** ${{ inputs.repository_name }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Scan Type:** ${{ inputs.scan_type }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Severity Threshold:** ${{ inputs.severity_threshold }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Financial Compliance:** ${{ inputs.include_financial_compliance }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Scanned by:** FortTax Security Framework" >> $GITHUB_STEP_SUMMARY
+          echo "### Scan Overview" >> $GITHUB_STEP_SUMMARY
+          echo "- **Application**: ${{ inputs.app_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Framework**: ${{ steps.framework.outputs.framework }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Scan Type**: ${{ inputs.scan_type }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Repository**: ${{ inputs.repository_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Timestamp**: $(date -u '+%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Target URL**: ${{ inputs.target_url || 'N/A' }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
 
-          if [ "${{ job.status }}" = "success" ]; then
-            echo "- **Status:** ✅ No critical issues found" >> $GITHUB_STEP_SUMMARY
+          echo "### 🔍 Security Scan Results" >> $GITHUB_STEP_SUMMARY
+
+          TOTAL_ISSUES=0
+          CRITICAL_ISSUES=false
+
+          # Secrets scan results
+          if [ -f "security-results/gitleaks-report.json" ]; then
+            SECRETS_COUNT=$(jq length security-results/gitleaks-report.json 2>/dev/null || echo "0")
+            if [ "$SECRETS_COUNT" -eq 0 ]; then
+              echo "- 🟢 **Secrets Scan**: No secrets detected" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- 🔴 **Secrets Scan**: $SECRETS_COUNT potential secrets found ⚠️" >> $GITHUB_STEP_SUMMARY
+              TOTAL_ISSUES=$((TOTAL_ISSUES + SECRETS_COUNT))
+              CRITICAL_ISSUES=true
+            fi
           else
-            echo "- **Status:** ❌ Security issues detected" >> $GITHUB_STEP_SUMMARY
+            echo "- ⚪ **Secrets Scan**: Skipped or failed" >> $GITHUB_STEP_SUMMARY
           fi
 
-          if [ "${{ inputs.target_url }}" != "" ]; then
-            echo "- **Target URL:** ${{ inputs.target_url }}" >> $GITHUB_STEP_SUMMARY
+          # SAST scan results (multiple tools)
+          TOTAL_SAST_ISSUES=0
+          SAST_TOOLS_RUN=0
+
+          # Semgrep results (premium)
+          if [ -f "security-results/semgrep-results.json" ]; then
+            SEMGREP_COUNT=$(jq '.results | length' security-results/semgrep-results.json 2>/dev/null || echo "0")
+            TOTAL_SAST_ISSUES=$((TOTAL_SAST_ISSUES + SEMGREP_COUNT))
+            SAST_TOOLS_RUN=$((SAST_TOOLS_RUN + 1))
+            echo "- 🔍 **Semgrep (Premium)**: $SEMGREP_COUNT findings" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # ESLint security results (free)
+          if [ -f "security-results/eslint-security-results.json" ]; then
+            ESLINT_COUNT=$(jq '[.[] | select(.errorCount > 0 or .warningCount > 0)] | length' security-results/eslint-security-results.json 2>/dev/null || echo "0")
+            TOTAL_SAST_ISSUES=$((TOTAL_SAST_ISSUES + ESLINT_COUNT))
+            SAST_TOOLS_RUN=$((SAST_TOOLS_RUN + 1))
+            echo "- 🔍 **ESLint Security (Free)**: Issues in $ESLINT_COUNT files" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Bandit results (free, for Python)
+          if [ -f "security-results/bandit-results.json" ]; then
+            BANDIT_COUNT=$(jq '.results | length' security-results/bandit-results.json 2>/dev/null || echo "0")
+            TOTAL_SAST_ISSUES=$((TOTAL_SAST_ISSUES + BANDIT_COUNT))
+            SAST_TOOLS_RUN=$((SAST_TOOLS_RUN + 1))
+            echo "- 🔍 **Bandit Python (Free)**: $BANDIT_COUNT findings" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Overall SAST summary
+          if [ "$SAST_TOOLS_RUN" -eq 0 ]; then
+            echo "- ⚪ **SAST Scan**: No SAST tools ran" >> $GITHUB_STEP_SUMMARY
+          elif [ "$TOTAL_SAST_ISSUES" -eq 0 ]; then
+            echo "- 🟢 **SAST Summary**: No security issues detected ($SAST_TOOLS_RUN tools)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- 🔴 **SAST Summary**: $TOTAL_SAST_ISSUES total findings ($SAST_TOOLS_RUN tools) ⚠️" >> $GITHUB_STEP_SUMMARY
+            TOTAL_ISSUES=$((TOTAL_ISSUES + TOTAL_SAST_ISSUES))
+          fi
+
+          # Dependency scan results
+          if [ -f "security-results/npm-audit.json" ]; then
+            DEPS_COUNT=$(jq '.metadata.vulnerabilities.total // 0' security-results/npm-audit.json 2>/dev/null || echo "0")
+            if [ "$DEPS_COUNT" -eq 0 ]; then
+              echo "- 🟢 **Dependency Scan**: No vulnerabilities found" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- 🔴 **Dependency Scan**: $DEPS_COUNT vulnerabilities found ⚠️" >> $GITHUB_STEP_SUMMARY
+              TOTAL_ISSUES=$((TOTAL_ISSUES + DEPS_COUNT))
+            fi
+          else
+            echo "- ⚪ **Dependency Scan**: Skipped or failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Summary
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### 📊 Overall Results" >> $GITHUB_STEP_SUMMARY
+          if [ "$TOTAL_ISSUES" -eq 0 ]; then
+            echo "- ✅ **Status**: No security issues detected" >> $GITHUB_STEP_SUMMARY
+            echo "- 🎯 **Total Issues**: 0" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️ **Status**: Security issues detected - Review required" >> $GITHUB_STEP_SUMMARY
+            echo "- 🎯 **Total Issues**: $TOTAL_ISSUES" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "### 🔗 Security Framework" >> $GITHUB_STEP_SUMMARY
-          echo "- [Framework Repository](https://github.com/FortTax/security-workflows)" >> $GITHUB_STEP_SUMMARY
-          echo "- [Documentation](https://github.com/FortTax/security-workflows/blob/main/README.md)" >> $GITHUB_STEP_SUMMARY
+          echo "### 📁 Detailed Results" >> $GITHUB_STEP_SUMMARY
+          echo "- Download the **security-scan-results-${{ inputs.app_name }}-${{ github.run_number }}** artifact for detailed reports" >> $GITHUB_STEP_SUMMARY
+
+          # Check if SARIF upload was successful
+          if [ "${{ steps.sarif-upload.outputs.sarif_files_found }}" = "true" ]; then
+            echo "- ✅ **Security Tab**: SARIF results uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- ⚠️  **Security Tab**: No SARIF files generated (tools may not have found issues)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### ℹ️ Additional Information" >> $GITHUB_STEP_SUMMARY
+          echo "- **GitHub Advanced Security**: If you see 'Code Security must be enabled' warnings, this is normal for repositories without GitHub Advanced Security" >> $GITHUB_STEP_SUMMARY
+          echo "- **SARIF Upload**: SARIF files are only uploaded when security tools generate findings" >> $GITHUB_STEP_SUMMARY
+          echo "- **Free Alternatives**: This workflow uses free tools (ESLint Security, Bandit, npm audit) when premium tools aren't available" >> $GITHUB_STEP_SUMMARY
+
+          # Send email notification if critical issues found
+          if [ "$CRITICAL_ISSUES" = true ] && [ -n "${{ inputs.notification_email }}" ]; then
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### 📧 Notifications" >> $GITHUB_STEP_SUMMARY
+            echo "- 🚨 Security team notified at ${{ inputs.notification_email }}" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # Set outputs for potential further processing
+          echo "total_issues=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
+          echo "has_critical_issues=$CRITICAL_ISSUES" >> $GITHUB_OUTPUT

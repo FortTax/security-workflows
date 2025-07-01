@@ -7,29 +7,68 @@ multiple repositories to implement consistent, comprehensive security scanning.
 
 ## 🚀 Quick Start
 
-Add this to your repository's `.github/workflows/security-scan.yml`:
+Add this to your repository's `.github/workflows/centralized-security-scan.yml`:
 
 ```yaml
-name: Security Scan
+name: Centralized Security Scan
 
 on:
-  push:
-    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, staging]
+  workflow_run:
+    workflows: ["Your Deploy Workflow"]
+    types: [completed]
+    branches: [main, staging]
+  schedule:
+    - cron: "0 10 * * 1" # Weekly scan
+  workflow_dispatch:
 
 jobs:
   security-scan:
     uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
     with:
       app_name: "Your App Name"
-      scan_type: "all"
-      include_financial_compliance: false
+      scan_type: "frontend" # or "backend", "all"
+      target_url: "https://your-app.com"
+      include_financial_compliance: true
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 ```
+
+## 🏢 Deployed Applications
+
+### Currently Configured Applications
+
+| Application             | Framework    | URL                                    | Scan Schedule |
+| ----------------------- | ------------ | -------------------------------------- | ------------- |
+| **Portal Tax Analyzer** | VITE + React | https://portal-tax-analyzer.vercel.app | Mon 10:00 UTC |
+| **CFC Wizard v2**       | VITE + React | https://cfc-wizard-v2.vercel.app       | Mon 11:00 UTC |
+| **PFIC Wizard**         | NextJS       | https://pfic-wizard.vercel.app         | Mon 12:00 UTC |
+
+### Implementation Status
+
+✅ **Portal Tax Analyzer**
+
+- Centralized security workflow: `centralized-security-scan.yml`
+- Framework auto-detection: VITE
+- Financial compliance: Enabled
+- DAST scanning: Enabled with target URL
+
+✅ **CFC Wizard v2**
+
+- Centralized security workflow: `centralized-security-scan.yml`
+- Framework auto-detection: VITE
+- Financial compliance: Enabled
+- DAST scanning: Enabled with target URL
+
+✅ **PFIC Wizard**
+
+- Centralized security workflow: `centralized-security-scan.yml`
+- Framework auto-detection: NextJS
+- Financial compliance: Enabled
+- DAST scanning: Enabled with target URL
 
 ## 🔧 Available Workflows
 
@@ -39,16 +78,20 @@ jobs:
 
 ## 📊 Security Tools Included
 
-| Tool          | Purpose                                     | Always Runs                   | Requires Secret |
-| ------------- | ------------------------------------------- | ----------------------------- | --------------- |
-| **Semgrep**   | Static Application Security Testing (SAST)  | ✅                            | Optional        |
-| **GitLeaks**  | Secrets detection                           | ✅                            | No              |
-| **OWASP ZAP** | Dynamic Application Security Testing (DAST) | Only if `target_url` provided | No              |
-| **Trivy**     | Container/filesystem security               | ✅                            | No              |
-| **Checkov**   | Infrastructure as Code (IaC) security       | ✅                            | No              |
-| **Snyk**      | Dependency vulnerability scanning           | Only if token provided        | ✅              |
-| **FOSSA**     | License compliance scanning                 | Only if token provided        | ✅              |
-| **Custom**    | Financial services compliance checks        | Only if enabled               | No              |
+| Tool                | Purpose                                     | Always Runs                   | Requires Secret |
+| ------------------- | ------------------------------------------- | ----------------------------- | --------------- |
+| **GitLeaks**        | Secrets detection                           | ✅                            | No              |
+| **ESLint Security** | Free SAST for JavaScript/TypeScript         | ✅                            | No              |
+| **Bandit**          | Free SAST for Python files                  | ✅ (if Python found)          | No              |
+| **Semgrep**         | Premium SAST scanning                       | Only if token provided        | ✅              |
+| **npm audit**       | Basic dependency scanning                   | ✅                            | No              |
+| **Trivy**           | Container/filesystem security               | ✅                            | No              |
+| **OWASP ZAP**       | Dynamic Application Security Testing (DAST) | Only if `target_url` provided | No              |
+| **Checkov**         | Infrastructure as Code (IaC) security       | ✅                            | No              |
+| **Snyk**            | Enhanced dependency vulnerability scanning  | Only if token provided        | ✅              |
+| **FOSSA**           | License compliance scanning                 | Only if token provided        | ✅              |
+| **Custom**          | Financial services compliance checks        | ✅                            | No              |
+| **Custom**          | Insecure token storage detection            | ✅                            | No              |
 
 ## ⚙️ Configuration Options
 
@@ -60,8 +103,10 @@ jobs:
 
 - `target_url` - URL for DAST scanning (web applications)
 - `scan_type` - Types of scans to run:
-  - `all` - Run all security scans (default)
+  - `frontend` - Frontend-optimized (SAST, secrets, dependencies, container,
+    DAST)
   - `backend` - Backend-optimized (SAST, secrets, dependencies, container, IaC)
+  - `all` - Run all security scans (default)
   - `sast` - Static code analysis only
   - `secrets` - Secrets detection only
   - `dependencies` - Dependency scanning only
@@ -70,252 +115,204 @@ jobs:
   - `dast` - Dynamic application testing only
   - `license` - License compliance only
   - `financial` - Financial compliance checks only
+- `app_framework` - Application framework (`vite`, `nextjs`, `react`, `node`,
+  `auto-detect`)
+- `node_version` - Node.js version to use (default: `18`)
 - `include_financial_compliance` - Enable fintech-specific compliance checks
+  (default: `true`)
 - `severity_threshold` - Minimum severity to report (`low`, `medium`, `high`,
   `critical`)
 - `notification_email` - Email for security alerts
 
-### Optional Secrets
+### Optional Secrets (All are optional - free alternatives available)
 
-- `SNYK_TOKEN` - For enhanced dependency scanning
+- `SNYK_TOKEN` - For enhanced dependency scanning (alternative: npm audit)
 - `FOSSA_API_KEY` - For license compliance scanning
-- `SEMGREP_APP_TOKEN` - For enhanced SAST scanning
+- `SEMGREP_APP_TOKEN` - For premium SAST scanning (alternative: ESLint
+  Security + Bandit)
 
 ## 🏦 Financial Services Compliance
 
-When `include_financial_compliance: true`, additional checks are performed for:
+When `include_financial_compliance: true` (default), additional checks are
+performed for:
 
 - **PCI DSS** - Payment card industry standards
-- **FFIEC CAT** - Financial institution cybersecurity assessment
-- **SOC 2** - Service organization controls
-- **GDPR** - Data protection compliance
+- **Tax Software Compliance** - IRS, CFC, PFIC, tax return processing
+- **Financial Data Handling** - SSN, TIN, EIN, routing numbers, account numbers
+- **Security Implementation** - Encryption, JWT, secure authentication
+- **Token Storage Security** - Detection of insecure localStorage/sessionStorage
+  usage
+
+### Tax Software Specific Checks
+
+The framework includes specialized checks for tax software applications:
+
+- **IRS Form Processing** - Detection of 1040, 8865, and other tax forms
+- **CFC Analysis** - Controlled Foreign Corporation compliance
+- **PFIC Reporting** - Passive Foreign Investment Company compliance
+- **Financial Data Security** - Enhanced protection for sensitive tax data
+
+## 🔄 Scan Triggers
+
+### Automatic Triggers
+
+1. **Pull Requests** - Quick security review before merge
+2. **Post-Deployment** - Comprehensive scan after successful deployment
+3. **Weekly Schedule** - Full security audit (Mondays, staggered times)
+
+### Manual Triggers
+
+- **workflow_dispatch** - Manual execution with custom parameters
+- Supports custom URL and scan type selection
 
 ## ⚠️ Important: Avoiding Duplicate Security Scans
 
-**CRITICAL:** Ensure you only have **ONE** security workflow per repository to
+**CRITICAL:** Each repository should have only **ONE** security workflow to
 avoid duplicate scans and resource waste.
 
-### Common Issues to Avoid
+### Migration from Existing Workflows
 
-❌ **Don't do this** - Multiple security workflows:
+When implementing the centralized security scan, disable or remove these
+existing workflows:
+
+#### Portal Tax Analyzer
+
+- ❌ `post-deployment-security.yml` (can be disabled)
+- ❌ `simple-security-scan.yml` (can be disabled)
+- ❌ `debug-security-scan.yml` (can be disabled)
+
+#### CFC Wizard v2
+
+- ❌ `standalone-security-scan.yml` (can be disabled)
+- ❌ `post-deployment-security.yml` (can be disabled)
+
+#### PFIC Wizard
+
+- ❌ `security-scan.yml` (can be disabled)
+- ❌ `manual-security-scan.yml` (can be disabled)
+- ❌ `post-deployment-security.yml` (can be disabled)
+
+### Recommended Implementation Steps
+
+1. **Deploy centralized workflow** - Add `centralized-security-scan.yml`
+2. **Test manual trigger** - Verify the new workflow works
+3. **Disable old workflows** - Comment out or delete existing security workflows
+4. **Update secrets** - Ensure all required secrets are configured
+5. **Monitor results** - Check security scan outputs and artifacts
+
+## 🔗 Implementation Examples
+
+### Frontend Application (VITE/React)
 
 ```yaml
-# BAD: Multiple files triggering on same events
-# security-scan.yml
-on:
-  push:
-    branches: [main]
+name: Centralized Security Scan
 
-# security-scan-internal.yml
-on:
-  push:
-    branches: [main]
-```
-
-✅ **Do this instead** - Single workflow with proper timing:
-
-```yaml
-# GOOD: One workflow after deployment
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
   workflow_run:
-    workflows: ["Test and Deploy"]
+    workflows: ["Deploy"]
     types: [completed]
-    branches: [main]
-```
-
-### Recommended Workflow Timing
-
-1. **For Pull Requests**: Run security scans for code review
-2. **For Deployments**: Run security scans AFTER successful deployment
-3. **For Scheduled**: Run weekly comprehensive scans
-4. **For Dormant Repos**: Run weekly checks, scan if no activity >30 days
-
-```yaml
-name: Security Scan
-
-on:
-  # Code review security check
-  pull_request:
-    branches: [main]
-
-  # Post-deployment security scan
-  workflow_run:
-    workflows: ["Test and Deploy"]
-    types: [completed]
-    branches: [main]
-
-  # Scheduled scans
+    branches: [main, staging]
   schedule:
-    # Weekly comprehensive scan (Mondays at 10 AM UTC)
     - cron: "0 10 * * 1"
-    # Weekly dormant repository check (Tuesdays at 9 AM UTC)
-    - cron: "0 9 * * 2"
-
-  # Manual trigger
   workflow_dispatch:
 
 jobs:
-  # Check if repository needs scanning (for scheduled events)
-  check-scan-needed:
-    if: github.event_name == 'schedule'
+  check-deployment:
     runs-on: ubuntu-latest
     outputs:
       should_scan: ${{ steps.check.outputs.should_scan }}
-      scan_reason: ${{ steps.check.outputs.scan_reason }}
+      app_url: ${{ steps.check.outputs.app_url }}
+      scan_type: ${{ steps.check.outputs.scan_type }}
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Check if scan is needed
+      - name: Determine scan parameters
         id: check
         run: |
-          # For dormant check schedule (Tuesdays), check if repo has been dormant
-          if [[ "${{ github.event.schedule }}" == "0 9 * * 2" ]]; then
-            echo "🗓️ Weekly dormant repository check..."
-
-            # Check last commit date
-            LAST_COMMIT_DATE=$(git log -1 --format=%ct)
-            CURRENT_DATE=$(date +%s)
-            DAYS_SINCE_LAST_COMMIT=$(( (CURRENT_DATE - LAST_COMMIT_DATE) / 86400 ))
-
-            echo "Last commit was $DAYS_SINCE_LAST_COMMIT days ago"
-
-            if [ $DAYS_SINCE_LAST_COMMIT -gt 30 ]; then
-              echo "should_scan=true" >> $GITHUB_OUTPUT
-              echo "scan_reason=Dormant repository (${DAYS_SINCE_LAST_COMMIT} days since last commit)" >> $GITHUB_OUTPUT
-              echo "✅ Repository dormant for $DAYS_SINCE_LAST_COMMIT days - security scan needed"
-            else
-              echo "should_scan=false" >> $GITHUB_OUTPUT
-              echo "scan_reason=Recent activity (${DAYS_SINCE_LAST_COMMIT} days since last commit)" >> $GITHUB_OUTPUT
-              echo "⏭️ Repository active (last commit $DAYS_SINCE_LAST_COMMIT days ago) - skipping scan"
-            fi
-          else
-            # Weekly scan always runs
-            echo "should_scan=true" >> $GITHUB_OUTPUT
-            echo "scan_reason=Weekly comprehensive scan" >> $GITHUB_OUTPUT
-            echo "✅ Weekly comprehensive scan scheduled"
-          fi
+          # Logic to determine when and what to scan
+          echo "should_scan=true" >> $GITHUB_OUTPUT
+          echo "app_url=https://your-app.com" >> $GITHUB_OUTPUT
+          echo "scan_type=frontend" >> $GITHUB_OUTPUT
 
   security-scan:
-    needs: [check-scan-needed]
-    # Only run if deployment succeeded, manual trigger, PR, or scheduled scan is needed
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      github.event_name == 'pull_request' ||
-      (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success') ||
-      (github.event_name == 'schedule' && needs.check-scan-needed.outputs.should_scan == 'true')
-
+    needs: check-deployment
+    if: needs.check-deployment.outputs.should_scan == 'true'
     uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
     with:
-      app_name: "Your App"
-      scan_type: "all"
-```
-
-## 📋 Usage Examples
-
-### Web Application
-
-```yaml
-jobs:
-  security-scan:
-    uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
-    with:
-      app_name: "Customer Portal"
-      target_url: "https://portal.company.com"
-      scan_type: "all"
-      severity_threshold: "medium"
-```
-
-### Backend API
-
-```yaml
-jobs:
-  security-scan:
-    uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
-    with:
-      app_name: "API Backend"
-      scan_type: "backend" # No DAST for APIs
-      severity_threshold: "high"
-```
-
-### Financial/Fintech Application
-
-```yaml
-jobs:
-  security-scan:
-    uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
-    with:
-      app_name: "Payment System"
-      target_url: "https://payments.company.com"
-      scan_type: "all"
+      app_name: "Your Frontend App"
+      target_url: ${{ needs.check-deployment.outputs.app_url }}
+      scan_type: ${{ needs.check-deployment.outputs.scan_type }}
       include_financial_compliance: true
-      severity_threshold: "high"
-      notification_email: "security@company.com"
+      severity_threshold: "medium"
+      notification_email: "security@yourcompany.com"
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 ```
 
-## 🔍 Results & Evidence
-
-### Where to Find Results
-
-1. **GitHub Security Tab** - `/security` - Automated security alerts
-2. **GitHub Actions** - `/actions` - Detailed workflow logs
-3. **Issues** - Automatic creation for findings (with `forttax-security-scan`
-   label)
-4. **SARIF Files** - Uploaded to GitHub for integrated security overview
-
-### SOC 2 Compliance Evidence
-
-The framework automatically provides evidence for:
-
-- **Continuous monitoring** - Every deployment scanned
-- **Threat detection** - Multiple security tools covering various attack vectors
-- **Incident response** - Automated alerting and issue creation
-- **Access controls** - Code and infrastructure scanning
-- **Data protection** - Secrets and vulnerability detection
-
-## 🔄 Version Management
-
-### Always Latest (Recommended)
+### Backend Service
 
 ```yaml
-uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
+jobs:
+  security-scan:
+    uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@main
+    with:
+      app_name: "Your Backend Service"
+      scan_type: "backend" # No DAST scanning
+      include_financial_compliance: true
+      severity_threshold: "high" # Stricter for backend
+    secrets:
+      SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
 ```
 
-### Pin to Specific Version
+## 📈 Security Metrics and Reporting
 
-```yaml
-uses: FortTax/security-workflows/.github/workflows/reusable-security-scan.yml@v1.0.0
-```
+### Automated Reporting
 
-## 🏢 Organization Setup
+- **GitHub Security Tab** - SARIF results uploaded automatically
+- **Workflow Artifacts** - Detailed scan results for download
+- **Job Summaries** - Executive summary in workflow output
+- **Email Notifications** - Alerts for critical security issues
 
-### 1. Set Organization Secrets
+### Key Metrics Tracked
 
-For organization-wide deployment:
+- **Secrets Detection** - Count of potential secrets found
+- **SAST Findings** - Security vulnerabilities in code
+- **Dependency Vulnerabilities** - Known CVEs in dependencies
+- **License Compliance** - License compatibility issues
+- **Financial Compliance** - Tax/financial regulation adherence
 
-- `SNYK_TOKEN` - Snyk API token
-- `FOSSA_API_KEY` - FOSSA API key
-- `SEMGREP_APP_TOKEN` - Semgrep app token
+## 🛠️ Troubleshooting
 
-### 2. Repository Templates
+### Common Issues
 
-Create repository templates with pre-configured security workflows.
+1. **Workflow not triggering**
+   - Check `workflow_run` references correct deployment workflow name
+   - Verify permissions are set correctly
 
-## 📞 Support
+2. **Scan failures**
+   - Review artifact downloads for detailed error logs
+   - Check if secrets are properly configured
 
-- **Issues**:
-  [Create issue](https://github.com/FortTax/security-workflows/issues/new)
-- **Security Team**: security@forttax.com
+3. **False positives**
+   - Configure `.gitleaks.toml` for secrets scanning
+   - Add Semgrep rule exclusions as needed
+
+### Debug Mode
+
+Enable debug mode by triggering manual workflow dispatch with verbose logging.
+
+## 🔐 Security Best Practices
+
+1. **Secrets Management** - Never commit API tokens to repositories
+2. **Regular Updates** - Keep security tools and rulesets updated
+3. **Immediate Response** - Address critical security findings quickly
+4. **Documentation** - Maintain security scan documentation
+5. **Training** - Ensure team understands security workflow outputs
 
 ---
 
-_Maintained by FortTax - Providing enterprise-grade security scanning for any
-repository._
+**Framework Maintained By:** FortTax Security Team **Last Updated:** {{
+current_date }} **Version:** 2.0.0 - Enhanced Multi-Application Support
