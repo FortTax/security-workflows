@@ -197,14 +197,14 @@ jobs:
         if: steps.scan-config.outputs.run_secrets == 'true'
         continue-on-error: true
         run: |
-          echo "🔍 Running GitLeaks secrets scan"
+          echo "🔍 Running GitLeaks secrets scan (Free Version)"
 
-          # Install GitLeaks
+          # Install GitLeaks (Free version)
           wget -q https://github.com/gitleaks/gitleaks/releases/latest/download/gitleaks_8.18.4_linux_x64.tar.gz
           tar -xzf gitleaks_8.18.4_linux_x64.tar.gz
           chmod +x gitleaks
 
-          # Run GitLeaks scan
+          # Run GitLeaks scan (works without license for basic scanning)
           ./gitleaks detect --source . --report-format json --report-path security-results/gitleaks-report.json --verbose || echo "GitLeaks completed with findings"
 
           # Process results
@@ -217,33 +217,67 @@ jobs:
               echo "🚨 SECURITY ALERT: Potential secrets detected!"
               echo "has_issues=true" >> $GITHUB_OUTPUT
             fi
+          else
+            echo "⚠️ GitLeaks scan failed, trying alternative secret detection..."
+
+            # Fallback: Simple grep-based secret detection
+            echo "🔍 Running fallback secret detection with grep patterns..."
+
+            # Simple secret detection using basic patterns
+            GREP_FINDINGS=0
+
+            # Check for API keys
+            if grep -r -i "api[_-]key.*[:=]" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.log" --exclude="*.md" | grep -v "TODO\|FIXME\|example" >/dev/null 2>&1; then
+              GREP_FINDINGS=$((GREP_FINDINGS + 1))
+            fi
+
+            # Check for access tokens
+            if grep -r -i "access[_-]token.*[:=]" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.log" --exclude="*.md" | grep -v "TODO\|FIXME\|example" >/dev/null 2>&1; then
+              GREP_FINDINGS=$((GREP_FINDINGS + 1))
+            fi
+
+            # Check for secrets
+            if grep -r -i "secret.*[:=]" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.log" --exclude="*.md" | grep -v "TODO\|FIXME\|example" >/dev/null 2>&1; then
+              GREP_FINDINGS=$((GREP_FINDINGS + 1))
+            fi
+
+            # Check for passwords
+            if grep -r -i "password.*[:=]" . --exclude-dir=node_modules --exclude-dir=.git --exclude="*.log" --exclude="*.md" | grep -v "TODO\|FIXME\|example" >/dev/null 2>&1; then
+              GREP_FINDINGS=$((GREP_FINDINGS + 1))
+            fi
+
+            if [ "$GREP_FINDINGS" -gt 0 ]; then
+              echo "🚨 SECURITY ALERT: $GREP_FINDINGS potential secrets detected by fallback scan!"
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+            else
+              echo "✅ No secrets detected by fallback scan"
+            fi
           fi
 
-            # Enhanced SAST Scanning with Semgrep (Premium - Optional)
-      - name: "🔍 Premium SAST Scan with Semgrep"
-        if: steps.scan-config.outputs.run_sast == 'true' && env.SEMGREP_APP_TOKEN != ''
+      # Free SAST Scanning with Semgrep Community Rules
+      - name: "🔍 Free SAST Scan with Semgrep Community"
+        if: steps.scan-config.outputs.run_sast == 'true'
         continue-on-error: true
-        env:
-          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
         run: |
-          echo "📝 Running Semgrep SAST scan (Premium)"
+          echo "📝 Running Semgrep SAST scan (Free Community Rules)"
           pip install semgrep
 
-          # Framework-specific rules
+          # Framework-specific rules (free community rules)
           FRAMEWORK="${{ steps.framework.outputs.framework }}"
           RULES="--config=auto --config=p/security-audit --config=p/owasp-top-ten"
 
           if [ "$FRAMEWORK" = "nextjs" ]; then
-            RULES="$RULES --config=p/react --config=p/typescript --config=p/nextjs"
+            RULES="$RULES --config=p/react --config=p/typescript"
           elif [ "$FRAMEWORK" = "vite" ] || [ "$FRAMEWORK" = "react" ]; then
             RULES="$RULES --config=p/react --config=p/typescript"
           fi
 
-          # Add financial compliance rules
+          # Add financial compliance rules (free alternatives)
           if [ "${{ inputs.include_financial_compliance }}" = "true" ]; then
-            RULES="$RULES --config=p/fintech"
+            RULES="$RULES --config=p/bandit --config=p/nodejs-scan"
           fi
 
+          # Run Semgrep without app token (free tier)
           semgrep $RULES \
             --json \
             --output=security-results/semgrep-results.json \
@@ -259,6 +293,8 @@ jobs:
               echo "🚨 SECURITY ALERT: SAST findings detected!"
               echo "has_issues=true" >> $GITHUB_OUTPUT
             fi
+          else
+            echo "⚠️ Semgrep scan failed, continuing with other SAST tools..."
           fi
 
       # Free SAST Scanning with ESLint Security
@@ -323,11 +359,14 @@ jobs:
           EOF
 
           # Run ESLint security scan
+          ESLINT_EXIT_CODE=0
           npx eslint --config .eslintrc-security.json \
             --ext .js,.jsx,.ts,.tsx \
             --format json \
             --output-file security-results/eslint-security-results.json \
-            src/ . || echo "ESLint security scan completed with findings"
+            src/ . || ESLINT_EXIT_CODE=$?
+
+          echo "ESLint security scan completed (exit code: $ESLINT_EXIT_CODE)"
 
           # Clean up temp config
           rm -f .eslintrc-security.json
@@ -380,11 +419,71 @@ jobs:
       - name: "🌐 DAST Scan with OWASP ZAP"
         if: steps.scan-config.outputs.run_dast == 'true' && inputs.target_url != ''
         continue-on-error: true
-        uses: zaproxy/action-baseline@v0.12.0
-        with:
-          target: ${{ inputs.target_url }}
-          rules_file_name: '.zap/rules.tsv'
-          cmd_options: '-a'
+        run: |
+          echo "🕷️ Running OWASP ZAP baseline scan on ${{ inputs.target_url }}"
+          mkdir -p security-results
+
+          # Run ZAP baseline scan with timeout
+          timeout 600 docker run --rm \
+            -v $(pwd)/security-results:/zap/wrk/:rw \
+            -u zap \
+            ghcr.io/zaproxy/zaproxy:stable zap-baseline.py \
+            -t "${{ inputs.target_url }}" \
+            -J zap-report.json \
+            -w zap-report.md \
+            -r zap-report.html \
+            -I \
+            || echo "ZAP scan completed with warnings (exit code $?)"
+
+          # Move results and check if scan produced output
+          if [ -f "security-results/zap-report.json" ]; then
+            echo "✅ ZAP scan completed successfully"
+            # Count alerts for summary
+            ALERT_COUNT=$(jq '[.site[].alerts[]] | length' security-results/zap-report.json 2>/dev/null || echo "0")
+            echo "📊 ZAP found $ALERT_COUNT security alerts"
+            echo "zap_alerts=$ALERT_COUNT" >> $GITHUB_OUTPUT
+          else
+            echo "⚠️ ZAP scan did not produce results file"
+            echo "zap_alerts=0" >> $GITHUB_OUTPUT
+          fi
+
+      # HTTP Security Headers Scan with securityheaders.com
+      - name: "🛡️ HTTP Security Headers Scan"
+        if: inputs.target_url != ''
+        continue-on-error: true
+        run: |
+          echo "🔍 Checking security headers for ${{ inputs.target_url }}"
+          mkdir -p security-results
+
+          API_URL="https://securityheaders.com/?q=${{ inputs.target_url }}&hide=on&followRedirects=on&format=json"
+          echo "Requesting $API_URL"
+          RESPONSE=$(curl -s "$API_URL" || true)
+
+          if [ -z "$RESPONSE" ]; then
+            echo "⚠️  Unable to fetch SecurityHeaders results"
+            exit 0
+          fi
+
+          echo "$RESPONSE" > security-results/securityheaders.json
+
+          GRADE=$(echo "$RESPONSE" | jq -r '.grade // empty')
+          if [ -z "$GRADE" ]; then
+            echo "⚠️  Could not determine grade from response"
+            exit 0
+          fi
+
+          echo "Security Headers grade: $GRADE"
+          echo "securityheaders_grade=$GRADE" >> $GITHUB_OUTPUT
+
+          case "$GRADE" in
+            A+|A)
+              echo "✅ Acceptable security headers grade ($GRADE)"
+              ;;
+            *)
+              echo "🚨 SECURITY ALERT: Poor security headers grade ($GRADE)"
+              echo "has_issues=true" >> $GITHUB_OUTPUT
+              ;;
+          esac
 
       # Enhanced Dependency Scanning
       - name: "📦 Dependency Vulnerability Scan"
@@ -578,12 +677,29 @@ jobs:
 
       # Upload SARIF files to GitHub Security (requires GitHub Advanced Security)
       - name: "📤 Upload SARIF to GitHub Security"
+        id: sarif-upload-step
         if: always() && steps.sarif-upload.outputs.sarif_files_found == 'true'
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.sarif-upload.outputs.sarif_upload_dir }}
           category: security-scan-results
         continue-on-error: true
+
+      # Handle SARIF upload result and provide informative message
+      - name: "📋 SARIF Upload Status"
+        if: always() && steps.sarif-upload.outputs.sarif_files_found == 'true'
+        run: |
+          if [ "${{ steps.sarif-upload-step.outcome }}" = "failure" ]; then
+            echo "⚠️ SARIF upload failed - This is expected if GitHub Advanced Security is not enabled"
+            echo "ℹ️ SARIF files are still available in the workflow artifacts for manual review"
+            echo "sarif_uploaded=false" >> $GITHUB_OUTPUT
+          elif [ "${{ steps.sarif-upload-step.outcome }}" = "success" ]; then
+            echo "✅ SARIF files successfully uploaded to GitHub Security tab"
+            echo "sarif_uploaded=true" >> $GITHUB_OUTPUT
+          else
+            echo "ℹ️ SARIF upload skipped or not attempted"
+            echo "sarif_uploaded=false" >> $GITHUB_OUTPUT
+          fi
 
       # Upload security results
       - name: "📤 Upload Security Results"
@@ -657,6 +773,39 @@ jobs:
             echo "- 🔍 **Bandit Python (Free)**: $BANDIT_COUNT findings" >> $GITHUB_STEP_SUMMARY
           fi
 
+          # Security Headers results
+          if [ -f "security-results/securityheaders.json" ]; then
+            SH_GRADE=$(jq -r '.grade' security-results/securityheaders.json 2>/dev/null || echo "")
+            if [ -z "$SH_GRADE" ]; then
+              echo "- ⚪ **Security Headers**: Failed to parse results" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- 🔍 **Security Headers**: Grade $SH_GRADE" >> $GITHUB_STEP_SUMMARY
+              case "$SH_GRADE" in
+                A+|A)
+                  ;; # good grades, no action
+                *)
+                  TOTAL_ISSUES=$((TOTAL_ISSUES + 1))
+                  CRITICAL_ISSUES=true
+                  ;;
+              esac
+            fi
+          else
+            echo "- ⚪ **Security Headers**: Skipped or failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
+          # DAST scan results (ZAP)
+          if [ -f "security-results/zap-report.json" ]; then
+            ZAP_ALERTS=$(jq '[.site[].alerts[]] | length' security-results/zap-report.json 2>/dev/null || echo "0")
+            if [ "$ZAP_ALERTS" -eq 0 ]; then
+              echo "- 🟢 **DAST Scan (ZAP)**: No security alerts found" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- 🔴 **DAST Scan (ZAP)**: $ZAP_ALERTS security alerts found ⚠️" >> $GITHUB_STEP_SUMMARY
+              TOTAL_ISSUES=$((TOTAL_ISSUES + ZAP_ALERTS))
+            fi
+          else
+            echo "- ⚪ **DAST Scan (ZAP)**: Skipped or failed" >> $GITHUB_STEP_SUMMARY
+          fi
+
           # Overall SAST summary
           if [ "$SAST_TOOLS_RUN" -eq 0 ]; then
             echo "- ⚪ **SAST Scan**: No SAST tools ran" >> $GITHUB_STEP_SUMMARY
@@ -697,9 +846,13 @@ jobs:
 
           # Check if SARIF upload was successful
           if [ "${{ steps.sarif-upload.outputs.sarif_files_found }}" = "true" ]; then
-            echo "- ✅ **Security Tab**: SARIF results uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
+            if [ "${{ steps.sarif-upload-step.outcome }}" = "success" ]; then
+              echo "- ✅ **Security Tab**: SARIF results uploaded to GitHub Security tab" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "- ⚠️ **Security Tab**: SARIF upload failed (GitHub Advanced Security may not be enabled)" >> $GITHUB_STEP_SUMMARY
+            fi
           else
-            echo "- ⚠️  **Security Tab**: No SARIF files generated (tools may not have found issues)" >> $GITHUB_STEP_SUMMARY
+            echo "- ⚪ **Security Tab**: No SARIF files generated (tools may not have found issues)" >> $GITHUB_STEP_SUMMARY
           fi
 
           echo "" >> $GITHUB_STEP_SUMMARY

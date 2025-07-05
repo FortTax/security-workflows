@@ -1,0 +1,628 @@
+2025-06-30T10:15:26.5275689Z Current runner version: '2.325.0'
+2025-06-30T10:15:26.5330414Z ##[group]Runner Image Provisioner
+2025-06-30T10:15:26.5331682Z Hosted Compute Agent
+2025-06-30T10:15:26.5332813Z Version: 20250620.352
+2025-06-30T10:15:26.5333864Z Commit: f262f3aba23b10ea191b2a62bdee1ca4c3d344da
+2025-06-30T10:15:26.5335079Z Build Date: 2025-06-20T19:27:17Z
+2025-06-30T10:15:26.5336205Z ##[endgroup]
+2025-06-30T10:15:26.5337217Z ##[group]Operating System
+2025-06-30T10:15:26.5338212Z Ubuntu
+2025-06-30T10:15:26.5359512Z 24.04.2
+2025-06-30T10:15:26.5360364Z LTS
+2025-06-30T10:15:26.5361069Z ##[endgroup]
+2025-06-30T10:15:26.5362179Z ##[group]Runner Image
+2025-06-30T10:15:26.5363163Z Image: ubuntu-24.04
+2025-06-30T10:15:26.5364095Z Version: 20250622.1.0
+2025-06-30T10:15:26.5366137Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20250622.1/images/ubuntu/Ubuntu2404-Readme.md
+2025-06-30T10:15:26.5369165Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20250622.1
+2025-06-30T10:15:26.5371116Z ##[endgroup]
+2025-06-30T10:15:26.5372989Z ##[group]GITHUB_TOKEN Permissions
+2025-06-30T10:15:26.5375888Z Contents: read
+2025-06-30T10:15:26.5376758Z Metadata: read
+2025-06-30T10:15:26.5377536Z Packages: read
+2025-06-30T10:15:26.5378477Z ##[endgroup]
+2025-06-30T10:15:26.5411864Z Secret source: Actions
+2025-06-30T10:15:26.5413108Z Prepare workflow directory
+2025-06-30T10:15:26.6366434Z Prepare all required actions
+2025-06-30T10:15:26.6471370Z Getting action download info
+2025-06-30T10:15:27.2814386Z ##[group]Download immutable action package 'actions/checkout@v4'
+2025-06-30T10:15:27.2816058Z Version: 4.2.2
+2025-06-30T10:15:27.2817250Z Digest: sha256:ccb2698953eaebd21c7bf6268a94f9c26518a7e38e27e0b83c1fe1ad049819b1
+2025-06-30T10:15:27.2818461Z Source commit SHA: 11bd71901bbe5b1630ceea73d27597364c9af683
+2025-06-30T10:15:27.2819786Z ##[endgroup]
+2025-06-30T10:15:27.8184920Z Download action repository 'semgrep/semgrep-action@v1' (SHA:713efdd345f3035192eaa63f56867b88e63e4e5d)
+2025-06-30T10:15:28.0491567Z Download action repository 'gitleaks/gitleaks-action@v2' (SHA:ff98106e4c7b2bc287b24eaf42907196329070c7)
+2025-06-30T10:15:28.2736670Z Download action repository 'snyk/actions@master' (SHA:cdb760004ba9ea4d525f2e043745dfe85bb9077e)
+2025-06-30T10:15:28.5037146Z Download action repository 'aquasecurity/trivy-action@master' (SHA:76071ef0d7ec797419534a183b498b4d6366cf37)
+2025-06-30T10:15:28.6941370Z ##[group]Download immutable action package 'github/codeql-action@v3'
+2025-06-30T10:15:28.6942001Z Version: 3.29.1
+2025-06-30T10:15:28.6942543Z Digest: sha256:e10e555cafb2af4c37da07c47788d041b659dae95f50a13041b7dd8d3b629ec5
+2025-06-30T10:15:28.6943093Z Source commit SHA: 39edc492dbe16b1465b0cafca41432d857bdb31a
+2025-06-30T10:15:28.6943598Z ##[endgroup]
+2025-06-30T10:15:35.7118220Z Getting action download info
+2025-06-30T10:15:35.8833659Z Download action repository 'aquasecurity/setup-trivy@ff1b8b060f23b650436d419b5e13f67f5d4c3087' (SHA:ff1b8b060f23b650436d419b5e13f67f5d4c3087)
+2025-06-30T10:15:36.0151019Z ##[group]Download immutable action package 'actions/cache@v4'
+2025-06-30T10:15:36.0151378Z Version: 4.2.3
+2025-06-30T10:15:36.0151719Z Digest: sha256:c8a3bb963e1f1826d8fcc8d1354f0dd29d8ac1db1d4f6f20247055ae11b81ed9
+2025-06-30T10:15:36.0152148Z Source commit SHA: 5a3ec84eff668545956fd18022155c47e93e2684
+2025-06-30T10:15:36.0152432Z ##[endgroup]
+2025-06-30T10:15:36.1680523Z Getting action download info
+2025-06-30T10:15:36.3446310Z Complete job name: Backend Security Scan
+2025-06-30T10:15:36.3842519Z ##[group]Pull down action image 'returntocorp/semgrep-agent:v1'
+2025-06-30T10:15:36.3881544Z ##[command]/usr/bin/docker pull returntocorp/semgrep-agent:v1
+2025-06-30T10:15:37.7215595Z v1: Pulling from returntocorp/semgrep-agent
+2025-06-30T10:15:37.8575522Z 7264a8db6415: Pulling fs layer
+2025-06-30T10:15:37.8578306Z 66e1d5e70e42: Pulling fs layer
+2025-06-30T10:15:37.8578951Z 64dfa579cd50: Pulling fs layer
+2025-06-30T10:15:37.8579414Z afa58c10ee34: Pulling fs layer
+2025-06-30T10:15:37.8579806Z cd87b3fa61f8: Pulling fs layer
+2025-06-30T10:15:37.8580572Z a54df9278105: Pulling fs layer
+2025-06-30T10:15:37.8580947Z 22d9c0f131ae: Pulling fs layer
+2025-06-30T10:15:37.8581439Z bfa6cbe2a060: Pulling fs layer
+2025-06-30T10:15:37.8581826Z e6455d0c4d0a: Pulling fs layer
+2025-06-30T10:15:37.8582197Z 4e6528b8b44b: Pulling fs layer
+2025-06-30T10:15:37.8582540Z 77aae498c7b4: Pulling fs layer
+2025-06-30T10:15:37.8582898Z f6a963258091: Pulling fs layer
+2025-06-30T10:15:37.8583315Z e68b04e3dc22: Pulling fs layer
+2025-06-30T10:15:37.8583686Z e50eacad623d: Pulling fs layer
+2025-06-30T10:15:37.8584055Z 464938719a27: Pulling fs layer
+2025-06-30T10:15:37.8584406Z c09dc33c2ea4: Pulling fs layer
+2025-06-30T10:15:37.8584756Z db70a1bf97d5: Pulling fs layer
+2025-06-30T10:15:37.8585106Z 5667267dbf96: Pulling fs layer
+2025-06-30T10:15:37.8585448Z 55e5ab738d77: Pulling fs layer
+2025-06-30T10:15:37.8585799Z fbf9ea8fb0f3: Pulling fs layer
+2025-06-30T10:15:37.8586158Z afa58c10ee34: Waiting
+2025-06-30T10:15:37.8586464Z cd87b3fa61f8: Waiting
+2025-06-30T10:15:37.8586765Z a54df9278105: Waiting
+2025-06-30T10:15:37.8587069Z e50eacad623d: Waiting
+2025-06-30T10:15:37.8587369Z 464938719a27: Waiting
+2025-06-30T10:15:37.8587673Z 22d9c0f131ae: Waiting
+2025-06-30T10:15:37.8587965Z bfa6cbe2a060: Waiting
+2025-06-30T10:15:37.8588260Z c09dc33c2ea4: Waiting
+2025-06-30T10:15:37.8588570Z db70a1bf97d5: Waiting
+2025-06-30T10:15:37.8589175Z e6455d0c4d0a: Waiting
+2025-06-30T10:15:37.8589471Z 5667267dbf96: Waiting
+2025-06-30T10:15:37.8589761Z 4e6528b8b44b: Waiting
+2025-06-30T10:15:37.8590047Z 55e5ab738d77: Waiting
+2025-06-30T10:15:37.8590564Z 77aae498c7b4: Waiting
+2025-06-30T10:15:37.8590787Z fbf9ea8fb0f3: Waiting
+2025-06-30T10:15:37.8590963Z f6a963258091: Waiting
+2025-06-30T10:15:37.8591139Z e68b04e3dc22: Waiting
+2025-06-30T10:15:37.9642738Z 66e1d5e70e42: Verifying Checksum
+2025-06-30T10:15:37.9665661Z 66e1d5e70e42: Download complete
+2025-06-30T10:15:37.9754128Z 7264a8db6415: Download complete
+2025-06-30T10:15:38.0179916Z 64dfa579cd50: Verifying Checksum
+2025-06-30T10:15:38.0181830Z 64dfa579cd50: Download complete
+2025-06-30T10:15:38.0635338Z afa58c10ee34: Verifying Checksum
+2025-06-30T10:15:38.0639466Z afa58c10ee34: Download complete
+2025-06-30T10:15:38.1114464Z a54df9278105: Verifying Checksum
+2025-06-30T10:15:38.1115278Z a54df9278105: Download complete
+2025-06-30T10:15:38.1261686Z 7264a8db6415: Pull complete
+2025-06-30T10:15:38.1440399Z cd87b3fa61f8: Verifying Checksum
+2025-06-30T10:15:38.1443174Z cd87b3fa61f8: Download complete
+2025-06-30T10:15:38.2020894Z 22d9c0f131ae: Verifying Checksum
+2025-06-30T10:15:38.2022997Z 22d9c0f131ae: Download complete
+2025-06-30T10:15:38.3084598Z bfa6cbe2a060: Verifying Checksum
+2025-06-30T10:15:38.3095710Z bfa6cbe2a060: Download complete
+2025-06-30T10:15:38.3135721Z e6455d0c4d0a: Verifying Checksum
+2025-06-30T10:15:38.3136186Z e6455d0c4d0a: Download complete
+2025-06-30T10:15:38.4399315Z 77aae498c7b4: Verifying Checksum
+2025-06-30T10:15:38.4399821Z 77aae498c7b4: Download complete
+2025-06-30T10:15:38.4629479Z 4e6528b8b44b: Verifying Checksum
+2025-06-30T10:15:38.4670135Z 4e6528b8b44b: Download complete
+2025-06-30T10:15:38.5659522Z e68b04e3dc22: Verifying Checksum
+2025-06-30T10:15:38.5692746Z e68b04e3dc22: Download complete
+2025-06-30T10:15:38.5957503Z f6a963258091: Verifying Checksum
+2025-06-30T10:15:38.5958335Z f6a963258091: Download complete
+2025-06-30T10:15:38.5960943Z 66e1d5e70e42: Pull complete
+2025-06-30T10:15:38.5961350Z e50eacad623d: Verifying Checksum
+2025-06-30T10:15:38.5962078Z e50eacad623d: Download complete
+2025-06-30T10:15:38.6757216Z 464938719a27: Download complete
+2025-06-30T10:15:38.6819022Z c09dc33c2ea4: Download complete
+2025-06-30T10:15:38.6875798Z db70a1bf97d5: Download complete
+2025-06-30T10:15:38.7619633Z 5667267dbf96: Verifying Checksum
+2025-06-30T10:15:38.7620585Z 5667267dbf96: Download complete
+2025-06-30T10:15:38.7646728Z 55e5ab738d77: Verifying Checksum
+2025-06-30T10:15:38.7648201Z 55e5ab738d77: Download complete
+2025-06-30T10:15:38.8549574Z fbf9ea8fb0f3: Verifying Checksum
+2025-06-30T10:15:38.8556242Z fbf9ea8fb0f3: Download complete
+2025-06-30T10:15:39.3359733Z 64dfa579cd50: Pull complete
+2025-06-30T10:15:39.3573356Z afa58c10ee34: Pull complete
+2025-06-30T10:15:39.6698899Z cd87b3fa61f8: Pull complete
+2025-06-30T10:15:39.6855977Z a54df9278105: Pull complete
+2025-06-30T10:15:39.7132588Z 22d9c0f131ae: Pull complete
+2025-06-30T10:15:39.9947628Z bfa6cbe2a060: Pull complete
+2025-06-30T10:15:41.0364290Z e6455d0c4d0a: Pull complete
+2025-06-30T10:15:42.3223538Z 4e6528b8b44b: Pull complete
+2025-06-30T10:15:42.3381914Z 77aae498c7b4: Pull complete
+2025-06-30T10:15:43.3887314Z f6a963258091: Pull complete
+2025-06-30T10:15:43.4100366Z e68b04e3dc22: Pull complete
+2025-06-30T10:15:43.4281822Z e50eacad623d: Pull complete
+2025-06-30T10:15:43.4468275Z 464938719a27: Pull complete
+2025-06-30T10:15:43.4570654Z c09dc33c2ea4: Pull complete
+2025-06-30T10:15:43.4705349Z db70a1bf97d5: Pull complete
+2025-06-30T10:15:43.4810212Z 5667267dbf96: Pull complete
+2025-06-30T10:15:43.4956673Z 55e5ab738d77: Pull complete
+2025-06-30T10:15:43.5217035Z fbf9ea8fb0f3: Pull complete
+2025-06-30T10:15:43.5264057Z Digest: sha256:2ed984f89000f77516016248700ad91681cb89bbe2adbdecd1d38dc84394adbb
+2025-06-30T10:15:43.5276124Z Status: Downloaded newer image for returntocorp/semgrep-agent:v1
+2025-06-30T10:15:43.5288273Z docker.io/returntocorp/semgrep-agent:v1
+2025-06-30T10:15:43.5322364Z ##[endgroup]
+2025-06-30T10:15:43.5353869Z ##[group]Pull down action image 'snyk/snyk:node'
+2025-06-30T10:15:43.5354303Z ##[command]/usr/bin/docker pull snyk/snyk:node
+2025-06-30T10:15:43.7981244Z node: Pulling from snyk/snyk
+2025-06-30T10:15:43.7982098Z 0c01110621e0: Pulling fs layer
+2025-06-30T10:15:43.7982916Z 3b1eb73e9939: Pulling fs layer
+2025-06-30T10:15:43.7997413Z b1b8a0660a31: Pulling fs layer
+2025-06-30T10:15:43.7997864Z 48b8862a18fa: Pulling fs layer
+2025-06-30T10:15:43.7998264Z e6b70c19c504: Pulling fs layer
+2025-06-30T10:15:43.7998869Z 34835e3c040f: Pulling fs layer
+2025-06-30T10:15:43.7999256Z b7e4cf344799: Pulling fs layer
+2025-06-30T10:15:43.7999656Z 7bf380c6954c: Pulling fs layer
+2025-06-30T10:15:43.8000030Z 1679144c3717: Pulling fs layer
+2025-06-30T10:15:43.8000443Z 0c729b5a7032: Pulling fs layer
+2025-06-30T10:15:43.8000827Z a5cbdb9262e2: Pulling fs layer
+2025-06-30T10:15:43.8001200Z 858aad3f8d5e: Pulling fs layer
+2025-06-30T10:15:43.8001563Z b7e4cf344799: Waiting
+2025-06-30T10:15:43.8001964Z 7bf380c6954c: Waiting
+2025-06-30T10:15:43.8002543Z 1679144c3717: Waiting
+2025-06-30T10:15:43.8003014Z 0c729b5a7032: Waiting
+2025-06-30T10:15:43.8003334Z a5cbdb9262e2: Waiting
+2025-06-30T10:15:43.8003657Z 858aad3f8d5e: Waiting
+2025-06-30T10:15:43.8003967Z e6b70c19c504: Waiting
+2025-06-30T10:15:43.8004281Z 34835e3c040f: Waiting
+2025-06-30T10:15:43.8004593Z 48b8862a18fa: Waiting
+2025-06-30T10:15:44.0341315Z 3b1eb73e9939: Verifying Checksum
+2025-06-30T10:15:44.0351574Z 3b1eb73e9939: Download complete
+2025-06-30T10:15:44.1398147Z 0c01110621e0: Verifying Checksum
+2025-06-30T10:15:44.1401068Z 0c01110621e0: Download complete
+2025-06-30T10:15:44.2856590Z b1b8a0660a31: Verifying Checksum
+2025-06-30T10:15:44.2857815Z b1b8a0660a31: Download complete
+2025-06-30T10:15:44.3026712Z e6b70c19c504: Verifying Checksum
+2025-06-30T10:15:44.3032219Z e6b70c19c504: Download complete
+2025-06-30T10:15:44.4786527Z b7e4cf344799: Verifying Checksum
+2025-06-30T10:15:44.4794509Z b7e4cf344799: Download complete
+2025-06-30T10:15:44.6037579Z 7bf380c6954c: Verifying Checksum
+2025-06-30T10:15:44.6038053Z 7bf380c6954c: Download complete
+2025-06-30T10:15:44.7141567Z 34835e3c040f: Verifying Checksum
+2025-06-30T10:15:44.7142485Z 34835e3c040f: Download complete
+2025-06-30T10:15:44.7176162Z 1679144c3717: Verifying Checksum
+2025-06-30T10:15:44.7181144Z 1679144c3717: Download complete
+2025-06-30T10:15:44.8365305Z 0c729b5a7032: Verifying Checksum
+2025-06-30T10:15:44.8368525Z 0c729b5a7032: Download complete
+2025-06-30T10:15:44.9903850Z 858aad3f8d5e: Verifying Checksum
+2025-06-30T10:15:44.9904341Z 858aad3f8d5e: Download complete
+2025-06-30T10:15:45.0997267Z a5cbdb9262e2: Verifying Checksum
+2025-06-30T10:15:45.0997935Z a5cbdb9262e2: Download complete
+2025-06-30T10:15:45.7098554Z 48b8862a18fa: Verifying Checksum
+2025-06-30T10:15:45.7099707Z 48b8862a18fa: Download complete
+2025-06-30T10:15:46.5485243Z 0c01110621e0: Pull complete
+2025-06-30T10:15:49.7234820Z 3b1eb73e9939: Pull complete
+2025-06-30T10:15:52.6723514Z b1b8a0660a31: Pull complete
+2025-06-30T10:16:01.2315686Z 48b8862a18fa: Pull complete
+2025-06-30T10:16:01.2523912Z e6b70c19c504: Pull complete
+2025-06-30T10:16:04.1223663Z 34835e3c040f: Pull complete
+2025-06-30T10:16:04.1827425Z b7e4cf344799: Pull complete
+2025-06-30T10:16:04.2007170Z 7bf380c6954c: Pull complete
+2025-06-30T10:16:04.2103495Z 1679144c3717: Pull complete
+2025-06-30T10:16:04.2220630Z 0c729b5a7032: Pull complete
+2025-06-30T10:16:04.8893041Z a5cbdb9262e2: Pull complete
+2025-06-30T10:16:05.3205417Z 858aad3f8d5e: Pull complete
+2025-06-30T10:16:05.3242571Z Digest: sha256:ac1c2e836b29ca054a25fcf31199edd6c9d2720a2baca502c4388110b65d58f0
+2025-06-30T10:16:05.3253616Z Status: Downloaded newer image for snyk/snyk:node
+2025-06-30T10:16:05.3263750Z docker.io/snyk/snyk:node
+2025-06-30T10:16:05.3281087Z ##[endgroup]
+2025-06-30T10:16:05.3514654Z ##[group]Run actions/checkout@v4
+2025-06-30T10:16:05.3515189Z with:
+2025-06-30T10:16:05.3515380Z   repository: FortTax/core-pfic
+2025-06-30T10:16:05.3515771Z   token: ***
+2025-06-30T10:16:05.3515946Z   ssh-strict: true
+2025-06-30T10:16:05.3516129Z   ssh-user: git
+2025-06-30T10:16:05.3516311Z   persist-credentials: true
+2025-06-30T10:16:05.3516517Z   clean: true
+2025-06-30T10:16:05.3516703Z   sparse-checkout-cone-mode: true
+2025-06-30T10:16:05.3516922Z   fetch-depth: 1
+2025-06-30T10:16:05.3517098Z   fetch-tags: false
+2025-06-30T10:16:05.3517283Z   show-progress: true
+2025-06-30T10:16:05.3517465Z   lfs: false
+2025-06-30T10:16:05.3517635Z   submodules: false
+2025-06-30T10:16:05.3517821Z   set-safe-directory: true
+2025-06-30T10:16:05.3518202Z ##[endgroup]
+2025-06-30T10:16:05.4631737Z Syncing repository: FortTax/core-pfic
+2025-06-30T10:16:05.4633565Z ##[group]Getting Git version info
+2025-06-30T10:16:05.4634479Z Working directory is '/home/runner/work/core-pfic/core-pfic'
+2025-06-30T10:16:05.4635871Z [command]/usr/bin/git version
+2025-06-30T10:16:05.5896480Z git version 2.49.0
+2025-06-30T10:16:05.5920198Z ##[endgroup]
+2025-06-30T10:16:05.5937439Z Temporarily overriding HOME='/home/runner/work/_temp/e1d384ef-7bde-4061-8fac-40b4a3db9fe9' before making global git config changes
+2025-06-30T10:16:05.5940810Z Adding repository directory to the temporary git global config as a safe directory
+2025-06-30T10:16:05.5954722Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/core-pfic/core-pfic
+2025-06-30T10:16:05.6039124Z Deleting the contents of '/home/runner/work/core-pfic/core-pfic'
+2025-06-30T10:16:05.6042401Z ##[group]Initializing the repository
+2025-06-30T10:16:05.6047225Z [command]/usr/bin/git init /home/runner/work/core-pfic/core-pfic
+2025-06-30T10:16:05.6791759Z hint: Using 'master' as the name for the initial branch. This default branch name
+2025-06-30T10:16:05.6793835Z hint: is subject to change. To configure the initial branch name to use in all
+2025-06-30T10:16:05.6794673Z hint: of your new repositories, which will suppress this warning, call:
+2025-06-30T10:16:05.6795219Z hint:
+2025-06-30T10:16:05.6795613Z hint: 	git config --global init.defaultBranch <name>
+2025-06-30T10:16:05.6796069Z hint:
+2025-06-30T10:16:05.6796507Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+2025-06-30T10:16:05.6797121Z hint: 'development'. The just-created branch can be renamed via this command:
+2025-06-30T10:16:05.6797528Z hint:
+2025-06-30T10:16:05.6797733Z hint: 	git branch -m <name>
+2025-06-30T10:16:05.6886759Z Initialized empty Git repository in /home/runner/work/core-pfic/core-pfic/.git/
+2025-06-30T10:16:05.6903412Z [command]/usr/bin/git remote add origin https://github.com/FortTax/core-pfic
+2025-06-30T10:16:05.6980639Z ##[endgroup]
+2025-06-30T10:16:05.6981433Z ##[group]Disabling automatic garbage collection
+2025-06-30T10:16:05.6986961Z [command]/usr/bin/git config --local gc.auto 0
+2025-06-30T10:16:05.7017699Z ##[endgroup]
+2025-06-30T10:16:05.7019083Z ##[group]Setting up auth
+2025-06-30T10:16:05.7027420Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-06-30T10:16:05.7060395Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-06-30T10:16:05.8738519Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-06-30T10:16:05.8801684Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-06-30T10:16:05.9124081Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+2025-06-30T10:16:05.9168463Z ##[endgroup]
+2025-06-30T10:16:05.9169361Z ##[group]Fetching the repository
+2025-06-30T10:16:05.9178101Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +d2eb3ca1680c5f5471b5970eb7af61d293fbab42:refs/remotes/origin/main
+2025-06-30T10:16:06.4120530Z From https://github.com/FortTax/core-pfic
+2025-06-30T10:16:06.4121870Z  * [new ref]         d2eb3ca1680c5f5471b5970eb7af61d293fbab42 -> origin/main
+2025-06-30T10:16:06.4191686Z ##[endgroup]
+2025-06-30T10:16:06.4192245Z ##[group]Determining the checkout info
+2025-06-30T10:16:06.4195326Z ##[endgroup]
+2025-06-30T10:16:06.4202909Z [command]/usr/bin/git sparse-checkout disable
+2025-06-30T10:16:06.4285772Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+2025-06-30T10:16:06.4315472Z ##[group]Checking out the ref
+2025-06-30T10:16:06.4322133Z [command]/usr/bin/git checkout --progress --force -B main refs/remotes/origin/main
+2025-06-30T10:16:06.4591993Z Switched to a new branch 'main'
+2025-06-30T10:16:06.4603460Z branch 'main' set up to track 'origin/main'.
+2025-06-30T10:16:06.4610878Z ##[endgroup]
+2025-06-30T10:16:06.4649747Z [command]/usr/bin/git log -1 --format=%H
+2025-06-30T10:16:06.4673490Z d2eb3ca1680c5f5471b5970eb7af61d293fbab42
+2025-06-30T10:16:06.4904431Z ##[group]Run echo "🛡️ Starting Security Scan for Core PFIC Backend"
+2025-06-30T10:16:06.4905095Z [36;1mecho "🛡️ Starting Security Scan for Core PFIC Backend"[0m
+2025-06-30T10:16:06.4905451Z [36;1mecho "📋 Repository: FortTax/core-pfic"[0m
+2025-06-30T10:16:06.4905719Z [36;1mecho "🔍 Scan Type: backend"[0m
+2025-06-30T10:16:06.4905977Z [36;1mecho "🏦 Financial Compliance: Enabled"[0m
+2025-06-30T10:16:06.5195435Z shell: /usr/bin/bash -e {0}
+2025-06-30T10:16:06.5195719Z ##[endgroup]
+2025-06-30T10:16:06.5294440Z 🛡️ Starting Security Scan for Core PFIC Backend
+2025-06-30T10:16:06.5295360Z 📋 Repository: FortTax/core-pfic
+2025-06-30T10:16:06.5296761Z 🔍 Scan Type: backend
+2025-06-30T10:16:06.5300918Z 🏦 Financial Compliance: Enabled
+2025-06-30T10:16:06.5356642Z ##[group]Run semgrep/semgrep-action@v1
+2025-06-30T10:16:06.5356914Z with:
+2025-06-30T10:16:06.5357164Z   config: p/security-audit p/owasp-top-ten p/fintech
+2025-06-30T10:16:06.5357453Z env:
+2025-06-30T10:16:06.5357621Z   SEMGREP_APP_TOKEN:
+2025-06-30T10:16:06.5357805Z ##[endgroup]
+2025-06-30T10:16:06.5445456Z ##[command]/usr/bin/docker run --name returntocorpsemgrepagentv1_49b2c1 --label 7e45bd --workdir /github/workspace --rm -e "SEMGREP_APP_TOKEN" -e "INPUT_CONFIG" -e "INPUT_PUBLISHTOKEN" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_RESULTS_URL" -e GITHUB_ACTIONS=true -e CI=true -v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/core-pfic/core-pfic":"/github/workspace" returntocorp/semgrep-agent:v1
+2025-06-30T10:16:07.3674036Z === Running: SEMGREP_RULES="p/security-audit p/owasp-top-ten p/fintech" semgrep ci
+2025-06-30T10:16:08.1049728Z
+2025-06-30T10:16:08.1050562Z
+2025-06-30T10:16:08.1052715Z ┌────────────────┐
+2025-06-30T10:16:08.1053939Z │ Debugging Info │
+2025-06-30T10:16:08.1054326Z └────────────────┘
+2025-06-30T10:16:08.1058808Z
+2025-06-30T10:16:08.1059733Z   SCAN ENVIRONMENT
+2025-06-30T10:16:08.1086337Z   versions    - semgrep 1.36.0 on python 3.11.4
+2025-06-30T10:16:08.1088085Z   environment - running in environment github-actions, triggering event is
+2025-06-30T10:16:08.1091308Z                 schedule
+2025-06-30T10:16:09.0268328Z [ERROR] Failed to download config from https://semgrep.dev/p/fintech: bad status code: 404 returned by config url:
+2025-06-30T10:16:09.0272964Z https://semgrep.dev/p/fintech
+2025-06-30T10:16:09.0273562Z [ERROR] invalid configuration file found (1 configs were invalid)
+2025-06-30T10:16:09.9625145Z ##[group]Run gitleaks/gitleaks-action@v2
+2025-06-30T10:16:09.9625423Z env:
+2025-06-30T10:16:09.9626014Z   GITHUB_TOKEN: ***
+2025-06-30T10:16:09.9626236Z ##[endgroup]
+2025-06-30T10:16:10.3144360Z [FortTax] is an organization. License key is required.
+2025-06-30T10:16:10.3171756Z ##[error]🛑 missing gitleaks license. Go grab one at gitleaks.io and store it as a GitHub Secret named GITLEAKS_LICENSE. For more info about the recent breaking update, see [here](https://github.com/gitleaks/gitleaks-action#-announcement).
+2025-06-30T10:16:10.3272149Z ##[group]Run snyk/actions/node@master
+2025-06-30T10:16:10.3272402Z with:
+2025-06-30T10:16:10.3272601Z   args: --severity-threshold=high
+2025-06-30T10:16:10.3272827Z   command: test
+2025-06-30T10:16:10.3272993Z   json: false
+2025-06-30T10:16:10.3273150Z env:
+2025-06-30T10:16:10.3273449Z   SNYK_TOKEN: ***
+2025-06-30T10:16:10.3273630Z ##[endgroup]
+2025-06-30T10:16:10.3300578Z ##[command]/usr/bin/docker run --name snyksnyknode_acd5dd --label 7e45bd --workdir /github/workspace --rm -e "SNYK_TOKEN" -e "INPUT_ARGS" -e "INPUT_COMMAND" -e "INPUT_JSON" -e "FORCE_COLOR" -e "SNYK_INTEGRATION_NAME" -e "SNYK_INTEGRATION_VERSION" -e "HOME" -e "GITHUB_JOB" -e "GITHUB_REF" -e "GITHUB_SHA" -e "GITHUB_REPOSITORY" -e "GITHUB_REPOSITORY_OWNER" -e "GITHUB_REPOSITORY_OWNER_ID" -e "GITHUB_RUN_ID" -e "GITHUB_RUN_NUMBER" -e "GITHUB_RETENTION_DAYS" -e "GITHUB_RUN_ATTEMPT" -e "GITHUB_ACTOR_ID" -e "GITHUB_ACTOR" -e "GITHUB_WORKFLOW" -e "GITHUB_HEAD_REF" -e "GITHUB_BASE_REF" -e "GITHUB_EVENT_NAME" -e "GITHUB_SERVER_URL" -e "GITHUB_API_URL" -e "GITHUB_GRAPHQL_URL" -e "GITHUB_REF_NAME" -e "GITHUB_REF_PROTECTED" -e "GITHUB_REF_TYPE" -e "GITHUB_WORKFLOW_REF" -e "GITHUB_WORKFLOW_SHA" -e "GITHUB_REPOSITORY_ID" -e "GITHUB_TRIGGERING_ACTOR" -e "GITHUB_WORKSPACE" -e "GITHUB_ACTION" -e "GITHUB_EVENT_PATH" -e "GITHUB_ACTION_REPOSITORY" -e "GITHUB_ACTION_REF" -e "GITHUB_PATH" -e "GITHUB_ENV" -e "GITHUB_STEP_SUMMARY" -e "GITHUB_STATE" -e "GITHUB_OUTPUT" -e "RUNNER_OS" -e "RUNNER_ARCH" -e "RUNNER_NAME" -e "RUNNER_ENVIRONMENT" -e "RUNNER_TOOL_CACHE" -e "RUNNER_TEMP" -e "RUNNER_WORKSPACE" -e "ACTIONS_RUNTIME_URL" -e "ACTIONS_RUNTIME_TOKEN" -e "ACTIONS_CACHE_URL" -e "ACTIONS_RESULTS_URL" -e GITHUB_ACTIONS=true -e CI=true -v "/var/run/docker.sock":"/var/run/docker.sock" -v "/home/runner/work/_temp/_github_home":"/github/home" -v "/home/runner/work/_temp/_github_workflow":"/github/workflow" -v "/home/runner/work/_temp/_runner_file_commands":"/github/file_commands" -v "/home/runner/work/core-pfic/core-pfic":"/github/workspace" snyk/snyk:node  "snyk" "test" "--severity-threshold=high"
+2025-06-30T10:16:13.6903812Z [1m[37m[39m[22m
+2025-06-30T10:16:13.6905635Z [1m[37mTesting /github/workspace...[39m[22m
+2025-06-30T10:16:13.6912389Z [1m[37m[39m[22m
+2025-06-30T10:16:13.6912876Z [1m[37m[39m[22m[1mOrganization:      [22mfort-tax
+2025-06-30T10:16:13.6913423Z [1mPackage manager:   [22mnpm
+2025-06-30T10:16:13.6913916Z [1mTarget file:       [22mpackage-lock.json
+2025-06-30T10:16:13.6914449Z [1mProject name:      [22mcore-pfic
+2025-06-30T10:16:13.6914931Z [1mOpen source:       [22mno
+2025-06-30T10:16:13.6915409Z [1mProject path:      [22m/github/workspace
+2025-06-30T10:16:13.6915977Z [1mLicenses:          [22m[32menabled[39m
+2025-06-30T10:16:13.6916279Z
+2025-06-30T10:16:13.6918122Z [32m✔ Tested 150 dependencies for known issues, no vulnerable paths found.[39m
+2025-06-30T10:16:13.6918810Z
+2025-06-30T10:16:13.6919456Z Tip: Detected multiple supported manifests (2), use --all-projects to scan all of them at once.
+2025-06-30T10:16:13.6920086Z
+2025-06-30T10:16:13.6920092Z
+2025-06-30T10:16:14.0229617Z
+2025-06-30T10:16:14.0231805Z [1m[31mYou have reached your monthly limit of 200 private tests for your fort-tax org.[39m[22m
+2025-06-30T10:16:14.0233763Z [1m[31mTo learn more about our plans and increase your tests limit visit https://snyk.io/plans.[39m[22m
+2025-06-30T10:16:14.8454800Z ##[group]Run aquasecurity/trivy-action@master
+2025-06-30T10:16:14.8455100Z with:
+2025-06-30T10:16:14.8455262Z   scan-type: fs
+2025-06-30T10:16:14.8455437Z   scan-ref: .
+2025-06-30T10:16:14.8455593Z   format: sarif
+2025-06-30T10:16:14.8455772Z   output: trivy-results.sarif
+2025-06-30T10:16:14.8456009Z   ignore-unfixed: false
+2025-06-30T10:16:14.8456192Z   vuln-type: os,library
+2025-06-30T10:16:14.8456404Z   severity: UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL
+2025-06-30T10:16:14.8456740Z   cache-dir: /home/runner/work/core-pfic/core-pfic/.cache/trivy
+2025-06-30T10:16:14.8457049Z   list-all-pkgs: false
+2025-06-30T10:16:14.8457243Z   version: v0.63.0
+2025-06-30T10:16:14.8457407Z   cache: true
+2025-06-30T10:16:14.8457582Z   skip-setup-trivy: false
+2025-06-30T10:16:14.8457954Z   token-setup-trivy: ***
+2025-06-30T10:16:14.8458161Z ##[endgroup]
+2025-06-30T10:16:14.8568937Z ##[group]Run aquasecurity/setup-trivy@ff1b8b060f23b650436d419b5e13f67f5d4c3087
+2025-06-30T10:16:14.8569377Z with:
+2025-06-30T10:16:14.8569579Z   version: v0.63.0
+2025-06-30T10:16:14.8569755Z   cache: true
+2025-06-30T10:16:14.8570048Z   token: ***
+2025-06-30T10:16:14.8570238Z   path: $HOME/.local/bin
+2025-06-30T10:16:14.8570443Z ##[endgroup]
+2025-06-30T10:16:14.8585257Z ##[group]Run echo "dir=$HOME/.local/bin/trivy-bin" >> $GITHUB_OUTPUT
+2025-06-30T10:16:14.8585656Z [36;1mecho "dir=$HOME/.local/bin/trivy-bin" >> $GITHUB_OUTPUT[0m
+2025-06-30T10:16:14.8643371Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:14.8643688Z ##[endgroup]
+2025-06-30T10:16:14.8796019Z ##[group]Run actions/cache@v4
+2025-06-30T10:16:14.8796233Z with:
+2025-06-30T10:16:14.8796421Z   path: /home/runner/.local/bin/trivy-bin
+2025-06-30T10:16:14.8796690Z   key: trivy-binary-v0.63.0-Linux-X64
+2025-06-30T10:16:14.8796931Z   enableCrossOsArchive: false
+2025-06-30T10:16:14.8797151Z   fail-on-cache-miss: false
+2025-06-30T10:16:14.8797360Z   lookup-only: false
+2025-06-30T10:16:14.8797538Z   save-always: false
+2025-06-30T10:16:14.8797723Z ##[endgroup]
+2025-06-30T10:16:15.2398354Z Cache hit for: trivy-binary-v0.63.0-Linux-X64
+2025-06-30T10:16:15.6801314Z Received 41598635 of 41598635 (100.0%), 100.9 MBs/sec
+2025-06-30T10:16:15.6805248Z Cache Size: ~40 MB (41598635 B)
+2025-06-30T10:16:15.6837070Z [command]/usr/bin/tar -xf /home/runner/work/_temp/62cb39ef-df1a-4013-809e-4d533ed87af2/cache.tzst -P -C /home/runner/work/core-pfic/core-pfic --use-compress-program unzstd
+2025-06-30T10:16:15.9734000Z Cache restored successfully
+2025-06-30T10:16:15.9895982Z Cache restored from key: trivy-binary-v0.63.0-Linux-X64
+2025-06-30T10:16:16.0008258Z ##[group]Run echo /home/runner/.local/bin/trivy-bin >> $GITHUB_PATH
+2025-06-30T10:16:16.0008890Z [36;1mecho /home/runner/.local/bin/trivy-bin >> $GITHUB_PATH[0m
+2025-06-30T10:16:16.0066139Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:16.0066464Z ##[endgroup]
+2025-06-30T10:16:16.0164536Z ##[group]Run echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+2025-06-30T10:16:16.0164914Z [36;1mecho "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT[0m
+2025-06-30T10:16:16.0217249Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:16.0217564Z ##[endgroup]
+2025-06-30T10:16:16.0332538Z ##[group]Run actions/cache@v4
+2025-06-30T10:16:16.0332759Z with:
+2025-06-30T10:16:16.0333012Z   path: /home/runner/work/core-pfic/core-pfic/.cache/trivy
+2025-06-30T10:16:16.0333316Z   key: cache-trivy-2025-06-30
+2025-06-30T10:16:16.0333551Z   restore-keys: cache-trivy-
+2025-06-30T10:16:16.0333779Z   enableCrossOsArchive: false
+2025-06-30T10:16:16.0334006Z   fail-on-cache-miss: false
+2025-06-30T10:16:16.0334216Z   lookup-only: false
+2025-06-30T10:16:16.0334410Z   save-always: false
+2025-06-30T10:16:16.0334602Z ##[endgroup]
+2025-06-30T10:16:16.2581064Z Cache hit for: cache-trivy-2025-06-30
+2025-06-30T10:16:16.6776417Z Received 48141230 of 48141230 (100.0%), 130.1 MBs/sec
+2025-06-30T10:16:16.6779213Z Cache Size: ~46 MB (48141230 B)
+2025-06-30T10:16:16.6813049Z [command]/usr/bin/tar -xf /home/runner/work/_temp/5e847a51-13a8-4859-840c-3022cbe11597/cache.tzst -P -C /home/runner/work/core-pfic/core-pfic --use-compress-program unzstd
+2025-06-30T10:16:17.8844780Z Cache restored successfully
+2025-06-30T10:16:18.0408380Z Cache restored from key: cache-trivy-2025-06-25
+2025-06-30T10:16:18.2695543Z ##[group]Run echo "$GITHUB_ACTION_PATH" >> $GITHUB_PATH
+2025-06-30T10:16:18.2696140Z [36;1mecho "$GITHUB_ACTION_PATH" >> $GITHUB_PATH[0m
+2025-06-30T10:16:18.2795585Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:18.2795917Z env:
+2025-06-30T10:16:18.2796242Z   GITHUB_ACTION_PATH: /home/runner/work/_actions/aquasecurity/trivy-action/master
+2025-06-30T10:16:18.2796613Z ##[endgroup]
+2025-06-30T10:16:18.6669500Z ##[group]Run rm -f trivy_envs.txt
+2025-06-30T10:16:18.6669961Z [36;1mrm -f trivy_envs.txt[0m
+2025-06-30T10:16:18.6670331Z [36;1mtouch trivy_envs.txt[0m
+2025-06-30T10:16:18.6735304Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:18.6735636Z ##[endgroup]
+2025-06-30T10:16:18.8306222Z ##[group]Run # Note: There is currently no way to distinguish between undefined variables and empty strings in GitHub Actions.
+2025-06-30T10:16:18.8307631Z [36;1m# Note: There is currently no way to distinguish between undefined variables and empty strings in GitHub Actions.[0m
+2025-06-30T10:16:18.8309028Z [36;1m# This limitation affects how we handle default values and empty inputs.[0m
+2025-06-30T10:16:18.8309964Z [36;1m# For more information, see: https://github.com/actions/runner/issues/924[0m
+2025-06-30T10:16:18.8310628Z [36;1m[0m
+2025-06-30T10:16:18.8311223Z [36;1m# The following logic implements the configuration priority described in the README:[0m
+2025-06-30T10:16:18.8311910Z [36;1m#[0m
+2025-06-30T10:16:18.8312211Z [36;1m# Inputs[0m
+2025-06-30T10:16:18.8312557Z [36;1m# Environment Variables[0m
+2025-06-30T10:16:18.8312983Z [36;1m# Config File[0m
+2025-06-30T10:16:18.8313348Z [36;1m# Defaults[0m
+2025-06-30T10:16:18.8313675Z [36;1m#[0m
+2025-06-30T10:16:18.8314365Z [36;1m# As noted above defaults are awkward to handle as GitHub Actions will inject those values as the input[0m
+2025-06-30T10:16:18.8315478Z [36;1m# if the caller doesn't provide them, thus if the input matches the default we don't set it as we[0m
+2025-06-30T10:16:18.8316927Z [36;1m# can't tell the difference.  Plus if we did set it when it was the default value then it could potentially [0m
+2025-06-30T10:16:18.8318159Z [36;1m# override an external environment variable, or something in the callers configuration file, which then wouldn't [0m
+2025-06-30T10:16:18.8319334Z [36;1m# match the configuration priority that is documented.[0m
+2025-06-30T10:16:18.8319918Z [36;1mset_env_var_if_provided() {[0m
+2025-06-30T10:16:18.8320374Z [36;1m  local var_name="$1"[0m
+2025-06-30T10:16:18.8320789Z [36;1m  local input_value="$2"[0m
+2025-06-30T10:16:18.8321224Z [36;1m  local default_value="$3"[0m
+2025-06-30T10:16:18.8321623Z [36;1m[0m
+2025-06-30T10:16:18.8322088Z [36;1m  if [ ! -z "$input_value" ] && [ "$input_value" != "$default_value" ]; then[0m
+2025-06-30T10:16:18.8322869Z [36;1m    # If action was provided with explicit input by the caller set that[0m
+2025-06-30T10:16:18.8323596Z [36;1m    echo "export $var_name=$input_value" >> trivy_envs.txt[0m
+2025-06-30T10:16:18.8324117Z [36;1m  fi[0m
+2025-06-30T10:16:18.8324434Z [36;1m}[0m
+2025-06-30T10:16:18.8324729Z [36;1m[0m
+2025-06-30T10:16:18.8325197Z [36;1m# Set environment variables, handling those with default values[0m
+2025-06-30T10:16:18.8326173Z [36;1m# cf. https://aquasecurity.github.io/trivy/latest/docs/configuration/#environment-variables[0m
+2025-06-30T10:16:18.8327058Z [36;1mset_env_var_if_provided "TRIVY_INPUT" "" ""[0m
+2025-06-30T10:16:18.8327654Z [36;1mset_env_var_if_provided "TRIVY_EXIT_CODE" "" ""[0m
+2025-06-30T10:16:18.8328347Z [36;1mset_env_var_if_provided "TRIVY_IGNORE_UNFIXED" "false" "false"[0m
+2025-06-30T10:16:18.8329470Z [36;1mset_env_var_if_provided "TRIVY_PKG_TYPES" "os,library" "os,library"[0m
+2025-06-30T10:16:18.8330826Z [36;1mset_env_var_if_provided "TRIVY_SEVERITY" "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL" "UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL"[0m
+2025-06-30T10:16:18.8331877Z [36;1mset_env_var_if_provided "TRIVY_FORMAT" "sarif" "table"[0m
+2025-06-30T10:16:18.8332521Z [36;1mset_env_var_if_provided "TRIVY_TEMPLATE" "" ""[0m
+2025-06-30T10:16:18.8333218Z [36;1mset_env_var_if_provided "TRIVY_OUTPUT" "trivy-results.sarif" ""[0m
+2025-06-30T10:16:18.8333915Z [36;1mset_env_var_if_provided "TRIVY_SKIP_DIRS" "" ""[0m
+2025-06-30T10:16:18.8334526Z [36;1mset_env_var_if_provided "TRIVY_SKIP_FILES" "" ""[0m
+2025-06-30T10:16:18.8335135Z [36;1mset_env_var_if_provided "TRIVY_TIMEOUT" "" ""[0m
+2025-06-30T10:16:18.8335747Z [36;1mset_env_var_if_provided "TRIVY_IGNORE_POLICY" "" ""[0m
+2025-06-30T10:16:18.8336341Z [36;1mset_env_var_if_provided "TRIVY_QUIET" "" ""[0m
+2025-06-30T10:16:18.8336987Z [36;1mset_env_var_if_provided "TRIVY_LIST_ALL_PKGS" "false" "false"[0m
+2025-06-30T10:16:18.8337674Z [36;1mset_env_var_if_provided "TRIVY_SCANNERS" "" ""[0m
+2025-06-30T10:16:18.8338272Z [36;1mset_env_var_if_provided "TRIVY_CONFIG" "" ""[0m
+2025-06-30T10:16:18.8339056Z [36;1mset_env_var_if_provided "TRIVY_TF_VARS" "" ""[0m
+2025-06-30T10:16:18.8339695Z [36;1mset_env_var_if_provided "TRIVY_DOCKER_HOST" "" ""[0m
+2025-06-30T10:16:18.8403462Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:18.8403797Z ##[endgroup]
+2025-06-30T10:16:18.9244059Z ##[group]Run entrypoint.sh
+2025-06-30T10:16:18.9244457Z [36;1mentrypoint.sh[0m
+2025-06-30T10:16:18.9306228Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:18.9306550Z env:
+2025-06-30T10:16:18.9306735Z   INPUT_SCAN_TYPE: fs
+2025-06-30T10:16:18.9306950Z   INPUT_IMAGE_REF:
+2025-06-30T10:16:18.9307150Z   INPUT_SCAN_REF: .
+2025-06-30T10:16:18.9307353Z   INPUT_TRIVYIGNORES:
+2025-06-30T10:16:18.9307562Z   INPUT_GITHUB_PAT:
+2025-06-30T10:16:18.9307775Z   INPUT_LIMIT_SEVERITIES_FOR_SARIF:
+2025-06-30T10:16:18.9308135Z   TRIVY_CACHE_DIR: /home/runner/work/core-pfic/core-pfic/.cache/trivy
+2025-06-30T10:16:18.9308480Z ##[endgroup]
+2025-06-30T10:16:18.9398436Z Building SARIF report with all severities
+2025-06-30T10:16:18.9400371Z Running Trivy with options: trivy fs .
+2025-06-30T10:16:18.9960843Z 2025-06-30T10:16:18Z	INFO	[vulndb] Need to update DB
+2025-06-30T10:16:18.9963149Z 2025-06-30T10:16:18Z	INFO	[vulndb] Downloading vulnerability DB...
+2025-06-30T10:16:18.9964013Z 2025-06-30T10:16:18Z	INFO	[vulndb] Downloading artifact...	repo="mirror.gcr.io/aquasec/trivy-db:2"
+2025-06-30T10:16:22.3750391Z 48.44 MiB / 66.29 MiB [-------------------------------------------->________________] 73.07% ? p/s ?66.29 MiB / 66.29 MiB [----------------------------------------------------------->] 100.00% ? p/s ?66.29 MiB / 66.29 MiB [----------------------------------------------------------->] 100.00% ? p/s ?66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 29.72 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 29.72 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 29.72 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 27.81 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 27.81 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 27.81 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 26.01 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 26.01 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [---------------------------------------------->] 100.00% 26.01 MiB p/s ETA 0s66.29 MiB / 66.29 MiB [-------------------------------------------------] 100.00% 29.31 MiB p/s 2.5s2025-06-30T10:16:22Z	INFO	[vulndb] Artifact successfully downloaded	repo="mirror.gcr.io/aquasec/trivy-db:2"
+2025-06-30T10:16:22.3765807Z 2025-06-30T10:16:22Z	INFO	[vuln] Vulnerability scanning is enabled
+2025-06-30T10:16:22.3766979Z 2025-06-30T10:16:22Z	INFO	[secret] Secret scanning is enabled
+2025-06-30T10:16:22.3768497Z 2025-06-30T10:16:22Z	INFO	[secret] If your scanning is slow, please try '--scanners vuln' to disable secret scanning
+2025-06-30T10:16:22.3771786Z 2025-06-30T10:16:22Z	INFO	[secret] Please see also https://trivy.dev/v0.63/docs/scanner/secret#recommendation for faster secret detection
+2025-06-30T10:16:22.7407864Z 2025-06-30T10:16:22Z	INFO	[npm] To collect the license information of packages, "npm install" needs to be performed beforehand	dir="node_modules"
+2025-06-30T10:16:22.7531743Z 2025-06-30T10:16:22Z	WARN	[pip] Unable to find python `site-packages` directory. License detection is skipped.	err="site-packages directory not found"
+2025-06-30T10:16:22.7659765Z 2025-06-30T10:16:22Z	INFO	Suppressing dependencies for development and testing. To display them, try the '--include-dev-deps' flag.
+2025-06-30T10:16:22.7665975Z 2025-06-30T10:16:22Z	INFO	Number of language-specific files	num=2
+2025-06-30T10:16:22.7670373Z 2025-06-30T10:16:22Z	INFO	[npm] Detecting vulnerabilities...
+2025-06-30T10:16:22.7809648Z 2025-06-30T10:16:22Z	INFO	[pip] Detecting vulnerabilities...
+2025-06-30T10:16:22.7946050Z ##[group]Run rm -f trivy_envs.txt
+2025-06-30T10:16:22.7946508Z [36;1mrm -f trivy_envs.txt[0m
+2025-06-30T10:16:22.8023396Z shell: /usr/bin/bash --noprofile --norc -e -o pipefail {0}
+2025-06-30T10:16:22.8023928Z ##[endgroup]
+2025-06-30T10:16:22.8182239Z ##[group]Run echo "🏦 Checking Financial Services Compliance for Core PFIC Backend..."
+2025-06-30T10:16:22.8183210Z [36;1mecho "🏦 Checking Financial Services Compliance for Core PFIC Backend..."[0m
+2025-06-30T10:16:22.8183840Z [36;1m[0m
+2025-06-30T10:16:22.8184189Z [36;1m# Check for PCI DSS related configurations[0m
+2025-06-30T10:16:22.8184712Z [36;1mecho "📋 PCI DSS Configuration Check:"[0m
+2025-06-30T10:16:22.8185518Z [36;1mif find . -name "*.js" -o -name "*.ts" -o -name "*.json" | xargs grep -l "credit.*card\|payment\|billing" 2>/dev/null; then[0m
+2025-06-30T10:16:22.8186507Z [36;1m  echo "⚠️  Payment-related code detected - PCI DSS compliance may be required"[0m
+2025-06-30T10:16:22.8205679Z [36;1mfi[0m
+2025-06-30T10:16:22.8206021Z [36;1m[0m
+2025-06-30T10:16:22.8206352Z [36;1m# Check for financial data handling[0m
+2025-06-30T10:16:22.8207197Z [36;1mecho "📋 Financial Data Handling Check:"[0m
+2025-06-30T10:16:22.8208143Z [36;1mif find . -name "*.js" -o -name "*.ts" | xargs grep -l "tax\|financial\|bank\|account.*number\|ssn\|social.*security" 2>/dev/null; then[0m
+2025-06-30T10:16:22.8209440Z [36;1m  echo "⚠️  Financial data handling detected - Enhanced security controls recommended"[0m
+2025-06-30T10:16:22.8210099Z [36;1mfi[0m
+2025-06-30T10:16:22.8210373Z [36;1m[0m
+2025-06-30T10:16:22.8210737Z [36;1m# Check for GDPR/Privacy compliance indicators[0m
+2025-06-30T10:16:22.8211257Z [36;1mecho "📋 Privacy Compliance Check:"[0m
+2025-06-30T10:16:22.8212003Z [36;1mif find . -name "*.js" -o -name "*.ts" | xargs grep -l "personal.*data\|privacy\|gdpr\|ccpa" 2>/dev/null; then[0m
+2025-06-30T10:16:22.8212790Z [36;1m  echo "✅ Privacy compliance indicators found"[0m
+2025-06-30T10:16:22.8213244Z [36;1mfi[0m
+2025-06-30T10:16:22.8286351Z shell: /usr/bin/bash -e {0}
+2025-06-30T10:16:22.8286728Z ##[endgroup]
+2025-06-30T10:16:22.8398468Z 🏦 Checking Financial Services Compliance for Core PFIC Backend...
+2025-06-30T10:16:22.8401377Z 📋 PCI DSS Configuration Check:
+2025-06-30T10:16:22.8496518Z ./src/app/api/analyze-profit-loss/prompt.ts
+2025-06-30T10:16:22.8498974Z ./src/app/api/parse-financial-files/dataExtractor.ts
+2025-06-30T10:16:22.8507622Z ./src/app/api/company-description-from-web/mockResponses.ts
+2025-06-30T10:16:22.8508558Z ⚠️  Payment-related code detected - PCI DSS compliance may be required
+2025-06-30T10:16:22.8509432Z 📋 Financial Data Handling Check:
+2025-06-30T10:16:22.8621004Z ./src/__tests__/test-config.types.ts
+2025-06-30T10:16:22.8621821Z ./src/__tests__/balanceSheetProcessor.test.ts
+2025-06-30T10:16:22.8622686Z ./src/__tests__/balanceSheetParsing.test.ts
+2025-06-30T10:16:22.8623346Z ./src/__tests__/analyzeProfitLossApi.test.ts
+2025-06-30T10:16:22.8624034Z ./src/__tests__/parseFinancialFilesApi.test.ts
+2025-06-30T10:16:22.8624790Z ./src/__tests__/flashExtractionOptimization.test.ts
+2025-06-30T10:16:22.8625343Z ./src/__tests__/aiIntegration.manual.test.ts
+2025-06-30T10:16:22.8625845Z ./src/app/api/classify-revenue-stream/prompt.ts
+2025-06-30T10:16:22.8626424Z ./src/app/api/classify-revenue-stream/mockClassifier.ts
+2025-06-30T10:16:22.8627041Z ./src/app/api/analyze-profit-loss/incomeSignCorrector.ts
+2025-06-30T10:16:22.8627637Z ./src/app/api/analyze-profit-loss/mockResponses.ts
+2025-06-30T10:16:22.8628174Z ./src/app/api/analyze-profit-loss/prompt.ts
+2025-06-30T10:16:22.8639677Z ./src/app/api/analyze-profit-loss/responseFormatter.ts
+2025-06-30T10:16:22.8640325Z ./src/app/api/analyze-profit-loss/route.ts
+2025-06-30T10:16:22.8640864Z ./src/app/api/analyze-profit-loss/dataValidator.ts
+2025-06-30T10:16:22.8641435Z ./src/app/api/analyze-profit-loss/excelProcessor.ts
+2025-06-30T10:16:22.8641948Z ./src/app/api/process-excel/route.ts
+2025-06-30T10:16:22.8642439Z ./src/app/api/parse-financial-files/fileAnalyzer.ts
+2025-06-30T10:16:22.8642980Z ./src/app/api/parse-financial-files/types.ts
+2025-06-30T10:16:22.8643523Z ./src/app/api/parse-financial-files/columnSelector.ts
+2025-06-30T10:16:22.8644099Z ./src/app/api/parse-financial-files/languageDetector.ts
+2025-06-30T10:16:22.8645108Z ./src/app/api/parse-financial-files/balanceSheetPrompt.ts
+2025-06-30T10:16:22.8645804Z ./src/app/api/parse-financial-files/balanceSheetProcessor.ts
+2025-06-30T10:16:22.8646571Z ./src/app/api/parse-financial-files/sectionClassifier.ts
+2025-06-30T10:16:22.8647179Z ./src/app/api/parse-financial-files/dataExtractor.ts
+2025-06-30T10:16:22.8647766Z ./src/app/api/parse-financial-files/entityDetector.ts
+2025-06-30T10:16:22.8648361Z ./src/app/api/parse-financial-files/route.ts
+2025-06-30T10:16:22.8659349Z ./src/app/api/parse-financial-files/mockResponse.ts
+2025-06-30T10:16:22.8659889Z ./src/lib/gemini.ts
+2025-06-30T10:16:22.8660249Z ./src/lib/fileProcessor.ts
+2025-06-30T10:16:22.8661068Z ⚠️  Financial data handling detected - Enhanced security controls recommended
+2025-06-30T10:16:22.8661787Z 📋 Privacy Compliance Check:
+2025-06-30T10:16:22.8752679Z ##[group]Run github/codeql-action/upload-sarif@v3
+2025-06-30T10:16:22.8753163Z with:
+2025-06-30T10:16:22.8753465Z   sarif_file: trivy-results.sarif
+2025-06-30T10:16:22.8753958Z   checkout_path: /home/runner/work/core-pfic/core-pfic
+2025-06-30T10:16:22.8754636Z   token: ***
+2025-06-30T10:16:22.8754931Z   matrix: null
+2025-06-30T10:16:22.8755248Z   wait-for-processing: true
+2025-06-30T10:16:22.8755615Z ##[endgroup]
+2025-06-30T10:16:23.5901234Z ##[warning]Caught an exception while gathering information for telemetry: HttpError: Resource not accessible by integration - https://docs.github.com/rest/actions/workflow-runs#get-a-workflow-run. Will skip sending status report.
+2025-06-30T10:16:23.5905179Z ##[group]Uploading results
+2025-06-30T10:16:23.5906743Z Processing sarif files: ["trivy-results.sarif"]
+2025-06-30T10:16:23.5921234Z Validating trivy-results.sarif
+2025-06-30T10:16:23.6547069Z Adding fingerprints to SARIF file. See https://docs.github.com/en/enterprise-cloud@latest/code-security/code-scanning/integrating-with-code-scanning/sarif-support-for-code-scanning#providing-data-to-track-code-scanning-alerts-across-runs for more information.
+2025-06-30T10:16:23.7454303Z ##[error]Resource not accessible by integration - https://docs.github.com/rest/actions/workflow-runs#get-a-workflow-run
+2025-06-30T10:16:23.8204764Z ##[warning]Caught an exception while gathering information for telemetry: HttpError: Resource not accessible by integration - https://docs.github.com/rest/actions/workflow-runs#get-a-workflow-run. Will skip sending status report.
+2025-06-30T10:16:23.8373915Z ##[group]Run echo "## 🔐 Security Scan Results for Core PFIC Backend" >> $GITHUB_STEP_SUMMARY
+2025-06-30T10:16:23.8374896Z [36;1mecho "## 🔐 Security Scan Results for Core PFIC Backend" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8375566Z [36;1mecho "" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8376157Z [36;1mecho "- **Application:** Core PFIC Backend" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8376902Z [36;1mecho "- **Repository:** FortTax/core-pfic" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8377602Z [36;1mecho "- **Scan Type:** backend" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8378274Z [36;1mecho "- **Financial Compliance:** Enabled" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8379241Z [36;1mecho "- **Scanned by:** Internal Security Framework" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8379838Z [36;1m[0m
+2025-06-30T10:16:23.8380145Z [36;1mif [ "success" = "success" ]; then[0m
+2025-06-30T10:16:23.8380762Z [36;1m  echo "- **Status:** ✅ No critical issues found" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8381316Z [36;1melse[0m
+2025-06-30T10:16:23.8381856Z [36;1m  echo "- **Status:** ⚠️  Issues detected - Review scan results" >> $GITHUB_STEP_SUMMARY[0m
+2025-06-30T10:16:23.8382486Z [36;1mfi[0m
+2025-06-30T10:16:23.8457097Z shell: /usr/bin/bash -e {0}
+2025-06-30T10:16:23.8457475Z env:
+2025-06-30T10:16:23.8457800Z   CODEQL_ACTION_FEATURE_MULTI_LANGUAGE: false
+2025-06-30T10:16:23.8458275Z   CODEQL_ACTION_FEATURE_SANDWICH: false
+2025-06-30T10:16:23.8458881Z   CODEQL_ACTION_FEATURE_SARIF_COMBINE: true
+2025-06-30T10:16:23.8459347Z   CODEQL_ACTION_FEATURE_WILL_UPLOAD: true
+2025-06-30T10:16:23.8459791Z   CODEQL_ACTION_VERSION: 3.29.1
+2025-06-30T10:16:23.8460159Z ##[endgroup]
+2025-06-30T10:16:23.8632629Z Post job cleanup.
+2025-06-30T10:16:24.4721799Z ##[group]Uploading combined SARIF debug artifact
+2025-06-30T10:16:24.4726280Z ##[endgroup]
+2025-06-30T10:16:24.5126309Z Post job cleanup.
+2025-06-30T10:16:24.5168136Z Post job cleanup.
+2025-06-30T10:16:24.8125210Z [command]/usr/bin/tar --posix -cf cache.tzst --exclude cache.tzst -P -C /home/runner/work/core-pfic/core-pfic --files-from manifest.txt --use-compress-program zstdmt
+2025-06-30T10:16:27.8203215Z Sent 48468860 of 48468860 (100.0%), 46.2 MBs/sec
+2025-06-30T10:16:27.9002338Z Cache saved with key: cache-trivy-2025-06-30
+2025-06-30T10:16:27.9286200Z Post job cleanup.
+2025-06-30T10:16:27.9393685Z Post job cleanup.
+2025-06-30T10:16:28.1312598Z Cache hit occurred on the primary key trivy-binary-v0.63.0-Linux-X64, not saving cache.
+2025-06-30T10:16:28.1513113Z Post job cleanup.
+2025-06-30T10:16:28.3076428Z [command]/usr/bin/git version
+2025-06-30T10:16:28.3139417Z git version 2.49.0
+2025-06-30T10:16:28.3220261Z Temporarily overriding HOME='/home/runner/work/_temp/63d0029f-2187-4f3c-8257-30dc88642851' before making global git config changes
+2025-06-30T10:16:28.3230050Z Adding repository directory to the temporary git global config as a safe directory
+2025-06-30T10:16:28.3234462Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/core-pfic/core-pfic
+2025-06-30T10:16:28.3305003Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+2025-06-30T10:16:28.3356428Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+2025-06-30T10:16:28.3672090Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+2025-06-30T10:16:28.3696363Z http.https://github.com/.extraheader
+2025-06-30T10:16:28.3711043Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+2025-06-30T10:16:28.3746186Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+2025-06-30T10:16:28.4090705Z Cleaning up orphan processes
