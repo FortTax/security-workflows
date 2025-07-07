@@ -88,6 +88,7 @@ jobs:
 | **Snyk**            | Enhanced dependency vulnerability scanning  | ✅ **ORGANIZATION ACTIVE**    | ✅              |
 | **Trivy**           | Container/filesystem security               | ✅                            | No              |
 | **OWASP ZAP**       | Dynamic Application Security Testing (DAST) | Only if `target_url` provided | No              |
+| **SecurityHeaders.com** | HTTP security headers analysis           | Only if `target_url` provided | No              |
 | **Checkov**         | Infrastructure as Code (IaC) security       | ✅                            | No              |
 | **FOSSA**           | License compliance scanning                 | ✅ **ORGANIZATION ACTIVE**    | ✅              |
 | **Custom**          | Financial services compliance checks        | ✅                            | No              |
