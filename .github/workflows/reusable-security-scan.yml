@@ -871,3 +871,179 @@ jobs:
           # Set outputs for potential further processing
           echo "total_issues=$TOTAL_ISSUES" >> $GITHUB_OUTPUT
           echo "has_critical_issues=$CRITICAL_ISSUES" >> $GITHUB_OUTPUT
+
+      # Central SOC2 Compliance Reporting
+      - name: "📊 Send Results to SOC2 Dashboard"
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "📊 Preparing security scan results for SOC2 compliance dashboard..."
+
+          # Create consolidated security report
+          cat > security-results/soc2-compliance-report.json << EOF
+          {
+            "scan_metadata": {
+              "timestamp": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')",
+              "repository": "${{ inputs.repository_name }}",
+              "application": "${{ inputs.app_name }}",
+              "branch": "${{ github.ref_name }}",
+              "commit_sha": "${{ github.sha }}",
+              "scan_type": "${{ inputs.scan_type }}",
+              "workflow_run_id": "${{ github.run_id }}",
+              "workflow_run_number": "${{ github.run_number }}"
+            },
+            "compliance_status": {
+              "overall_status": "$(if [ "${{ steps.security-scan.outputs.has_critical_issues || 'false' }}" = "true" ]; then echo "NON_COMPLIANT"; else echo "COMPLIANT"; fi)",
+              "total_issues": ${{ steps.security-scan.outputs.total_issues || 0 }},
+              "severity_threshold": "${{ inputs.severity_threshold }}",
+              "financial_compliance_enabled": ${{ inputs.include_financial_compliance }},
+              "scan_coverage": {
+                "secrets_scanning": $(if [ "${{ steps.scan-config.outputs.run_secrets }}" = "true" ]; then echo "true"; else echo "false"; fi),
+                "sast_scanning": $(if [ "${{ steps.scan-config.outputs.run_sast }}" = "true" ]; then echo "true"; else echo "false"; fi),
+                "dependency_scanning": $(if [ "${{ steps.scan-config.outputs.run_dependencies }}" = "true" ]; then echo "true"; else echo "false"; fi),
+                "container_scanning": $(if [ "${{ steps.scan-config.outputs.run_container }}" = "true" ]; then echo "true"; else echo "false"; fi),
+                "dast_scanning": $(if [ "${{ steps.scan-config.outputs.run_dast }}" = "true" ]; then echo "true"; else echo "false"; fi)
+              }
+            },
+            "scan_results": {
+              "secrets": {
+                "tool": "gitleaks",
+                "findings": ${{ steps.secrets-scan.outputs.secrets_found || 0 }},
+                "status": "$(if [ -f "security-results/gitleaks-report.json" ]; then echo "completed"; else echo "fallback_used"; fi)"
+              },
+              "sast": {
+                "tools_used": ["semgrep", "eslint-security", "bandit"],
+                "semgrep_findings": ${{ steps.sast-scan.outputs.semgrep_findings || 0 }},
+                "eslint_findings": ${{ steps.sast-scan.outputs.eslint_findings || 0 }},
+                "bandit_findings": ${{ steps.sast-scan.outputs.bandit_findings || 0 }}
+              },
+              "dependencies": {
+                "tool": "npm-audit",
+                "vulnerabilities": ${{ steps.dependency-scan.outputs.npm_vulnerabilities || 0 }},
+                "snyk_available": $(if [ -n "${{ secrets.SNYK_TOKEN }}" ]; then echo "true"; else echo "false"; fi)
+              },
+              "web_security": {
+                "security_headers_grade": "${{ steps.headers-scan.outputs.securityheaders_grade || 'not_tested' }}",
+                "zap_alerts": ${{ steps.dast-scan.outputs.zap_alerts || 0 }}
+              }
+            },
+            "evidence_artifacts": {
+              "sarif_uploaded": ${{ steps.sarif-upload.outputs.sarif_uploaded || 'false' }},
+              "artifacts_available": true,
+              "artifact_name": "security-scan-results-${{ inputs.app_name }}-${{ github.run_number }}",
+              "retention_days": 30
+            }
+          }
+          EOF
+
+          echo "✅ SOC2 compliance report generated: security-results/soc2-compliance-report.json"
+
+          # Send to central compliance database/API (examples)
+
+          # Option 1: Send to custom SOC2 API endpoint
+          if [ -n "${{ secrets.SOC2_COMPLIANCE_API_URL }}" ] && [ -n "${{ secrets.SOC2_API_KEY }}" ]; then
+            echo "📤 Sending results to SOC2 compliance API..."
+            curl -X POST "${{ secrets.SOC2_COMPLIANCE_API_URL }}/security-scans" \
+              -H "Authorization: Bearer ${{ secrets.SOC2_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d @security-results/soc2-compliance-report.json \
+              || echo "⚠️ Failed to send to SOC2 API"
+          fi
+
+          # Option 2: Send to Slack/Teams for immediate notification
+          if [ -n "${{ secrets.SOC2_SLACK_WEBHOOK }}" ] && [ "${{ steps.security-scan.outputs.has_critical_issues || 'false' }}" = "true" ]; then
+            echo "🚨 Sending SOC2 compliance alert to Slack..."
+            curl -X POST "${{ secrets.SOC2_SLACK_WEBHOOK }}" \
+              -H "Content-Type: application/json" \
+              -d '{
+                "text": "🚨 SOC2 Security Compliance Alert",
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "*SOC2 Security Compliance Alert*\n\n*Application:* ${{ inputs.app_name }}\n*Repository:* ${{ inputs.repository_name }}\n*Status:* ⚠️ NON-COMPLIANT\n*Issues Found:* ${{ steps.security-scan.outputs.total_issues || 0 }}\n*Scan Time:* $(date -u)"
+                    }
+                  },
+                  {
+                    "type": "actions",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "text": "View Results"
+                        },
+                        "url": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+                      }
+                    ]
+                  }
+                ]
+              }' || echo "⚠️ Failed to send Slack notification"
+          fi
+
+          # Option 3: Create GitHub Issue for tracking (SOC2 audit trail)
+          if [ "${{ steps.security-scan.outputs.has_critical_issues || 'false' }}" = "true" ] && [ -n "${{ secrets.GITHUB_TOKEN }}" ]; then
+            echo "📋 Creating SOC2 compliance tracking issue..."
+
+            # Create issue body
+            cat > issue-body.md << 'ISSUE_EOF'
+          ## 🚨 SOC2 Security Compliance Issue
+
+          **Scan Details:**
+          - **Application:** ${{ inputs.app_name }}
+          - **Repository:** ${{ inputs.repository_name }}
+          - **Scan Time:** $(date -u)
+          - **Workflow Run:** [${{ github.run_number }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})
+          - **Commit:** ${{ github.sha }}
+
+          **Compliance Status:** ⚠️ NON-COMPLIANT
+
+          **Issues Summary:**
+          - **Total Issues:** ${{ steps.security-scan.outputs.total_issues || 0 }}
+          - **Critical Issues:** Yes
+          - **Severity Threshold:** ${{ inputs.severity_threshold }}
+
+          **SOC2 Controls Affected:**
+          - CC6.1 - Logical and Physical Access Controls
+          - CC6.6 - Protection Against Vulnerabilities
+          - CC7.1 - System Monitoring
+
+          **Required Actions:**
+          1. [ ] Review security scan results
+          2. [ ] Remediate critical security issues
+          3. [ ] Re-run security scan to verify fixes
+          4. [ ] Update SOC2 compliance documentation
+
+          **Evidence:**
+          - Security scan artifacts: Available for 30 days
+          - SARIF files: $(if [ "${{ steps.sarif-upload.outputs.sarif_uploaded }}" = "true" ]; then echo "Uploaded to GitHub Security"; else echo "Available in artifacts"; fi)
+
+          ---
+          *This issue was automatically created for SOC2 compliance tracking.*
+          ISSUE_EOF
+
+            # Create the issue using GitHub CLI or API
+            if command -v gh >/dev/null 2>&1; then
+              gh issue create \
+                --title "SOC2 Security Compliance Issue - ${{ inputs.app_name }} - $(date +'%Y-%m-%d')" \
+                --body-file issue-body.md \
+                --label "security,soc2-compliance,high-priority" \
+                --assignee "${{ github.actor }}" \
+                || echo "⚠️ Failed to create compliance tracking issue"
+            fi
+
+            rm -f issue-body.md
+          fi
+
+          # Option 4: Send to Elasticsearch/Splunk for centralized logging
+          if [ -n "${{ secrets.ELASTICSEARCH_URL }}" ] && [ -n "${{ secrets.ELASTICSEARCH_API_KEY }}" ]; then
+            echo "📊 Sending results to Elasticsearch for SOC2 dashboard..."
+            curl -X POST "${{ secrets.ELASTICSEARCH_URL }}/soc2-security-scans/_doc" \
+              -H "Authorization: ApiKey ${{ secrets.ELASTICSEARCH_API_KEY }}" \
+              -H "Content-Type: application/json" \
+              -d @security-results/soc2-compliance-report.json \
+              || echo "⚠️ Failed to send to Elasticsearch"
+          fi
+
+          echo "📊 SOC2 compliance reporting completed"
