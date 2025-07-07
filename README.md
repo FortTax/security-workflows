@@ -83,13 +83,13 @@ jobs:
 | **GitLeaks**        | Secrets detection                           | ✅                            | No              |
 | **ESLint Security** | Free SAST for JavaScript/TypeScript         | ✅                            | No              |
 | **Bandit**          | Free SAST for Python files                  | ✅ (if Python found)          | No              |
-| **Semgrep**         | Premium SAST scanning                       | Only if token provided        | ✅              |
+| **Semgrep**         | SAST scanning (free rules only)            | ✅                            | No              |
 | **npm audit**       | Basic dependency scanning                   | ✅                            | No              |
+| **Snyk**            | Enhanced dependency vulnerability scanning  | ✅ **ORGANIZATION ACTIVE**    | ✅              |
 | **Trivy**           | Container/filesystem security               | ✅                            | No              |
 | **OWASP ZAP**       | Dynamic Application Security Testing (DAST) | Only if `target_url` provided | No              |
 | **Checkov**         | Infrastructure as Code (IaC) security       | ✅                            | No              |
-| **Snyk**            | Enhanced dependency vulnerability scanning  | Only if token provided        | ✅              |
-| **FOSSA**           | License compliance scanning                 | Only if token provided        | ✅              |
+| **FOSSA**           | License compliance scanning                 | ✅ **ORGANIZATION ACTIVE**    | ✅              |
 | **Custom**          | Financial services compliance checks        | ✅                            | No              |
 | **Custom**          | Insecure token storage detection            | ✅                            | No              |
 
@@ -124,12 +124,11 @@ jobs:
   `critical`)
 - `notification_email` - Email for security alerts
 
-### Optional Secrets (All are optional - free alternatives available)
+### Organization Secrets (Current Configuration)
 
-- `SNYK_TOKEN` - For enhanced dependency scanning (alternative: npm audit)
-- `FOSSA_API_KEY` - For license compliance scanning
-- `SEMGREP_APP_TOKEN` - For premium SAST scanning (alternative: ESLint
-  Security + Bandit)
+- ✅ `SNYK_TOKEN` - **ACTIVE** - Enhanced dependency vulnerability scanning
+- ✅ `FOSSA_API_KEY` - **ACTIVE** - Professional license compliance analysis
+- ❌ `SEMGREP_APP_TOKEN` - **NOT USED** - Using free Semgrep rules instead
 
 ## 🏦 Financial Services Compliance
 
@@ -248,7 +247,7 @@ jobs:
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
       FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
-      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      # SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # Not currently used
 ```
 
 ### Backend Service
@@ -264,7 +263,8 @@ jobs:
       severity_threshold: "high" # Stricter for backend
     secrets:
       SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-      SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+      FOSSA_API_KEY: ${{ secrets.FOSSA_API_KEY }}
+      # SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}  # Not currently used
 ```
 
 ## 📈 Security Metrics and Reporting
